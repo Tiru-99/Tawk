@@ -25,9 +25,12 @@ app.get('/' , (req, res)=>{
     res.send("hello world this is aayush tirmanwar");
 })
 
+//api routes
 import authRoute from './routes/auth.routes'
+import chatRoute from './routes/chat.routes'
 
 app.use("/api/v1/user" , authRoute);
+app.use("/api/v1/chat" , chatRoute )
 
 server.listen(PORT , ()=>{
     console.log(`The server is up and running on PORT ${PORT}`);

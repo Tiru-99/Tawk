@@ -37,7 +37,7 @@ model ChatModel {
   id        String    @id @default(uuid())
   name      String?
   isGroup   Boolean
-  latestMessage String 
+  latestMessage String?
   users     User[]
   messages  Message[]
   createdAt DateTime  @default(now())

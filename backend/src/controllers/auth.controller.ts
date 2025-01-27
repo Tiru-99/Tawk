@@ -92,6 +92,26 @@ export const loginHandler = async (req: Request, res: Response) => {
   };
 
 
+  export const getAllUsers = async(req:Request , res:Response) =>{
+    
+    try {
+      const users = await prisma.user.findMany(); 
+      console.log("These are my users ");
+  
+      res.json({
+        message : "Users Fetched Successfully",
+        data : users
+      })
+    } catch (error) {
+      console.log("Something went wrong while fetching the users list");
+      res.status(500).json({
+        message : "Something went wrong while fetching the data",
+        error : error
+      })
+    }
+  }
+
+
   export const health = async(req: Request , res : Response) => {
     const token = (req as any).user; 
     console.log("this is my fetched token" , token);
