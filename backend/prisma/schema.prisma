@@ -20,7 +20,7 @@ model User {
   password    String
   profile_pic String?
   messages    Message[]
-  chats       ChatModel[]
+  chats       ChatModelUsers[]
 }
 
 model Message {
@@ -38,7 +38,17 @@ model ChatModel {
   name      String?
   isGroup   Boolean
   latestMessage String?
-  users     User[]
+  users     ChatModelUsers[]
   messages  Message[]
   createdAt DateTime  @default(now())
+}
+
+model ChatModelUsers {
+  userId   String
+  chatId   String
+  user     User      @relation(fields: [userId], references: [id])
+  chat     ChatModel @relation(fields: [chatId], references: [id])
+
+  @@id([userId, chatId]) // Composite Primary Key for many-to-many  ensures that user cannot be readded 
+  //to the same chat 
 }

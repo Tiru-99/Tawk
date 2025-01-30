@@ -84,7 +84,8 @@ export const loginHandler = async (req: Request, res: Response) => {
         .cookie("jwtToken", jwtToken, options)
         .json({
           message: "User has been successfully Logged In",
-          token: jwtToken
+          token: jwtToken, 
+          userId: userExists.id
         });
     } catch (error) {
       console.log("this is the error" ,error);
@@ -110,7 +111,7 @@ export const loginHandler = async (req: Request, res: Response) => {
       const decodedToken = jwt.verify(token , process.env.JWT_SECRET!);
       res.status(200).json({
         message : "Authenticated" , 
-        token : decodedToken
+        token : decodedToken , 
       })
     } catch (error) {
       console.log("Something went wrong" , error);
@@ -124,19 +125,51 @@ export const loginHandler = async (req: Request, res: Response) => {
 
 
   export const getAllUsers = async(req:Request , res:Response) =>{
-    
+
+    const { id } = req.params; 
+  
     try {
       const users = await prisma.user.findMany({
+        where :{
+          id : { not : id }
+        },
         select : {
           id : true , 
           username : true , 
           email : true 
         }
       }); 
+
+      const userChats = await prisma.chatModel.findMany({
+        where : {
+            isGroup : false ,
+            users : {
+                some : {
+                    userId : id 
+                }
+            }
+        },
+        include : {
+            users : {
+                select : {
+                    userId : true 
+                }
+            }
+        }
+    })
+
+     //extract all the user ids which have a chat with the logged in user 
+     const usersToBeFiltered = userChats.flatMap((chat) =>
+      chat.users.filter((user) => user.userId !== id).map((user) => user.userId)
+    );
+
+    //filter users and send data to frontend 
+    const filteredUsers = users.filter(user => !usersToBeFiltered.includes(user.id));
+
   
       res.status(200).json({
         message : "Users Fetched Successfully",
-        data : users
+        data : filteredUsers
       })
     } catch (error) {
       console.log("Something went wrong while fetching the users list");

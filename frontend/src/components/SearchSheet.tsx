@@ -29,7 +29,8 @@ export function PeopleSheet() {
 
   useEffect(()=>{
     setIsLoading(true)
-    axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/user/getusers` , {
+    const userId = localStorage.userId; 
+    axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/user/getusers/${userId}` , {
         withCredentials : true
     })
     .then((res)=>{
