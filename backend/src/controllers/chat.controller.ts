@@ -41,6 +41,7 @@ export const createChat = async(req : Request , res : Response) => {
 
 }
 
+
 export const createGroupChat = async(req : Request , res:Response) => {
     //passing all the user id in array from the frontend 
     //creating a group of users in the chat
@@ -74,4 +75,19 @@ export const createGroupChat = async(req : Request , res:Response) => {
         error : error
      });
    }
+}
+
+export const getChats = async(req:Request , res:Response) => {
+    try{
+        const chats = await prisma.chatModel.findMany();
+        res.status(200).json({
+            message : "chats fetched successfully", 
+            data : chats
+        });
+    }catch(error){
+        console.log("This is my error" , error);
+        res.status(500).json({
+            message : "Internal Server Error"
+        });
+    }
 }

@@ -3,6 +3,8 @@ import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser';
 import {createServer} from 'http'; 
 import { Server } from 'socket.io';
+import cors from 'cors'
+import { setupSocketIOServer } from './socket';
 
 dotenv.config({
     path:'./.env'
@@ -13,10 +15,20 @@ const app = express();
 const server = createServer(app) ; 
 const io = new Server(server);
 
+setupSocketIOServer(io);
+
 app.use(express.json({limit: "16kb"}))
 app.use(express.urlencoded({extended: true, limit: "16kb"}))
 app.use(express.static("public"))
 app.use(cookieParser())
+app.use(
+    cors({
+      origin: process.env.FRONTEND_URL, // Allow only this origin
+      methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+      allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+      credentials: true, // Allow cookies if needed
+    })
+  );
 
 const PORT = 5000 ; 
 

@@ -8,7 +8,7 @@ interface CustomJwt extends JwtPayload {
 }
 
 export const verfiyJWT = async(req : Request , res : Response , next : NextFunction) => {
-    const token = req.header("Authorization")?.split(" ")[1];
+    const token = req.header("Authorization")?.split(" ")[1] || req.cookies.jwtToken;
 
     if(!token){
         res.status(401).json({

@@ -1,21 +1,25 @@
 import { Request , Response } from "express";
 import prisma from "../utils/prisma";
 import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken';
+import jwt, { decode } from 'jsonwebtoken';
 
 
 export const handleSignUp = async(req : Request , res : Response) => {
     const { email , password , username , profile_pic} = req.body ; 
 
-    const userExists = await prisma.user.findUnique({
-        where : { 
-            email : email
-        }
-    })
+    const userExists = await prisma.user.findFirst({
+      where: {
+          OR: [
+              { email: email },
+              { username: username }
+          ]
+      }
+  });
+  
 
     if(userExists){
          res.status(400).json({
-            message : "User with this email Id already exists"
+            message : "User with this email Id and username already exists"
         })
     }
 
@@ -91,14 +95,46 @@ export const loginHandler = async (req: Request, res: Response) => {
     }
   };
 
+  //controller to protect routes at the frontend 
+  export const checkAuth = async(req:Request , res : Response) => {
+    const token = req.cookies.jwtToken ; 
+
+    if(!token){
+        res.status(401).json({
+            message : "Unauthorized User"
+        });
+        return ;
+    }
+
+    try {
+      const decodedToken = jwt.verify(token , process.env.JWT_SECRET!);
+      res.status(200).json({
+        message : "Authenticated" , 
+        token : decodedToken
+      })
+    } catch (error) {
+      console.log("Something went wrong" , error);
+      res.status(400).json({
+        message : "Unauthorized"
+      })
+    }
+
+
+}
+
 
   export const getAllUsers = async(req:Request , res:Response) =>{
     
     try {
-      const users = await prisma.user.findMany(); 
-      console.log("These are my users ");
+      const users = await prisma.user.findMany({
+        select : {
+          id : true , 
+          username : true , 
+          email : true 
+        }
+      }); 
   
-      res.json({
+      res.status(200).json({
         message : "Users Fetched Successfully",
         data : users
       })
