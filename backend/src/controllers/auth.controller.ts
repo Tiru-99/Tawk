@@ -127,7 +127,8 @@ export const loginHandler = async (req: Request, res: Response) => {
   export const getAllUsers = async(req:Request , res:Response) =>{
 
     const { id } = req.params; 
-  
+
+    //route to filter user id and its all chat related  users 
     try {
       const users = await prisma.user.findMany({
         where :{
@@ -140,6 +141,7 @@ export const loginHandler = async (req: Request, res: Response) => {
         }
       }); 
 
+      //get the user who are in chat with the incoming users 
       const userChats = await prisma.chatModel.findMany({
         where : {
             isGroup : false ,
@@ -152,7 +154,7 @@ export const loginHandler = async (req: Request, res: Response) => {
         include : {
             users : {
                 select : {
-                    userId : true 
+                    userId : true,
                 }
             }
         }
@@ -163,7 +165,7 @@ export const loginHandler = async (req: Request, res: Response) => {
       chat.users.filter((user) => user.userId !== id).map((user) => user.userId)
     );
 
-    //filter users and send data to frontend 
+    //filter users  by id and send data to frontend 
     const filteredUsers = users.filter(user => !usersToBeFiltered.includes(user.id));
 
   

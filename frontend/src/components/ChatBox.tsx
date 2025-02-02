@@ -1,8 +1,12 @@
 "use client"
 
+import { useEffect , useState , useMemo , useRef } from "react"
 import { Phone, Video, MoreVertical, Check , Smile , Send , Paperclip } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import axios from 'axios';
+import {io} from 'socket.io-client';
+
 
 interface Message {
   id: number
@@ -14,35 +18,113 @@ interface Message {
   images?: string[]
 }
 
-export default function ChatBox() {
-  const messages: Message[] = [
-    {
-      id: 1,
-      sender: "Harry Maguire",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content: "Hey lads, tough game yesterday. Let's talk about what went wrong and how we can improve 😕",
-      time: "08:34 AM",
-    },
-    {
-      id: 2,
-      sender: "Bruno Fernandes",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content: "Agreed, Harry 👍. We had some good moments, but we need to be more clinical in front of the goal 🔥",
-      time: "08:34 AM",
-    },
-    {
-      id: 3,
-      sender: "You",
-      avatar: "/placeholder.svg?height=40&width=40",
-      content:
-        "We need to control the midfield and exploit their defensive weaknesses. Bruno and Paul, I'm counting on your creativity. Marcus and Jadon, stretch their defense wide. Use your pace and take on their full-backs.",
-      time: "08:34 AM",
-      isUser: true,
-    },
-  ]
+interface MessageProps {
+  id : string  
+  content : string 
+  createdAt : Date 
+  senderId : string 
+  chatId : string 
+  user : MessageUserProps
+}
+
+interface MessageUserProps {
+  userId : string 
+  username : string 
+  profile_pic : string
+}
+
+type ChatBoxProps = {
+  selectedChat : string 
+}
+
+export default function ChatBox({selectedChat} : ChatBoxProps) {
+
+  console.log("This is my selected chat" , selectedChat);
+  
+  const[messages , setMessages] = useState<MessageProps[]>([]);
+  const[message , setMessage] = useState<string>("");
+  const lastMessageRef = useRef<HTMLDivElement | null>(null);
+
+
+
+  //use memo hook to initialise the socket only once 
+  const socket = useMemo(() => {
+    const newSocket = io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {
+      withCredentials: true,
+    });
+
+    newSocket.on("connect", () => {
+      console.log("Connected to the socket server");
+    });
+
+    return newSocket;
+  }, []);
+
+
+  useEffect(()=> {
+    if(!selectedChat) return ; 
+
+    console.log("Selected Chat" , selectedChat);
+
+    socket.emit("join-chat" , selectedChat);
+
+      // Fetch messages when the chat is selected
+      axios
+      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/message/getmessages/${selectedChat}`)
+      .then((res) => {
+        console.log("The code is coming here")
+        setMessages(res.data.data);
+        console.log("this is my user details " , res.data.data.user);
+        console.log("Fetched messages: ", res.data.data);
+      })
+      .catch((error) => {
+        console.log("Error fetching messages: ", error);
+      });
+
+       // Handle incoming messages
+    const handleNewMessage = (newMessage:MessageProps) => {
+      console.log("Received new message:", newMessage);
+      
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    };
+
+    socket.on("new-message", handleNewMessage);
+    //scroll to the last message 
+   
+
+    // Cleanup function to remove event listener when component unmounts
+    return () => {
+      socket.off("new-message", handleNewMessage);
+    };
+  } ,[selectedChat]);
+
+
+  useEffect(()=> {
+    //scroll to the last message 
+    if(lastMessageRef.current){
+      lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  },[messages])
+
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+
+    const dataToSend = {
+      senderId: localStorage.userId,
+      content: message,
+      chatId: selectedChat,
+    };
+
+    socket.emit("send-message", dataToSend);
+    setMessage(" "); // Clear input field
+  };
+
 
   return (
-    <div className="flex h-screen flex-col bg-white relative ">
+    <>
+    {selectedChat ? (
+      < div className="flex h-screen flex-col bg-white relative ">
       {/* Header */}
       <header className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-3">
@@ -80,13 +162,17 @@ export default function ChatBox() {
         </div>
 
         <div className="space-y-6 py-6">
-            {messages.map((message) => (
-                <div key={message.id} className={`flex gap-3 ${message.isUser ? "flex-row-reverse" : "flex-row"}`}>
+            {messages.length > 0 && messages.map((message) => (
+                <div
+                key={message.id}
+                className={`flex gap-3 ${message.senderId === localStorage.userId ? "flex-row-reverse" : "flex-row"}`}
+                ref={message === messages[messages.length - 1] ? lastMessageRef : null}
+              >
                     {/* Avatar */}
                     <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 shrink-0">
                     <Image
                         src="/man.jpg"
-                        alt={`${message.sender}'s avatar`}
+                        alt={`madarchod's avatar`}
                         className="object-cover w-full h-full"
                         width={40}
                         height={40}
@@ -94,15 +180,21 @@ export default function ChatBox() {
                     </div>
 
                     {/* Message Content */}
-                    <div className={`max-w-[70%] ${message.isUser ? "text-right" : ""}`}>
+                    <div className={`max-w-[70%] ${message.senderId === localStorage.userId ? "text-right" : ""}`}>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{message.sender}</span>
-                        <span className="text-xs text-gray-500">{message.time}</span>
-                        {message.isUser && <Check className="h-4 w-4 text-blue-500" />}
+                    
+                      <span className="text-sm font-medium">
+                        {message.senderId === localStorage.userId
+                          ? "You"
+                          : message.user.username}
+                      </span>
+                    
+                        <span className="text-xs text-gray-500">9:45</span>
+                        {message.senderId === localStorage.userId && <Check className="h-4 w-4 text-blue-500" />}
                     </div>
                     <div
                         className={`mt-1 rounded-2xl px-4 py-2 ${
-                        message.isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
+                        message.senderId === localStorage.userId ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
                         }`}
                     >
                         {message.content}
@@ -126,6 +218,7 @@ export default function ChatBox() {
               type="text"
               placeholder="Type a message..."
               className="w-full rounded-full border border-gray-300 pl-4 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e)=> {setMessage(e.target.value)}}
             />
             <Button
               variant="ghost"
@@ -136,7 +229,8 @@ export default function ChatBox() {
               <Smile className="h-5 w-5" />
             </Button>
           </div>
-          <Button size="icon" className="rounded-full bg-blue-500 text-white hover:bg-blue-600">
+          <Button size="icon" className="rounded-full bg-blue-500 text-white hover:bg-blue-600"
+           onClick={handleSendMessage}>
             <Send className="h-5 w-5" />
           </Button>
         </div>
@@ -148,6 +242,15 @@ export default function ChatBox() {
         )} */}
       </div>
     </div>
+    ) :(
+      <div className="flex justify-center items-center min-h-screen">
+        <div>
+          Please select a chat to start chatting
+        </div>
+      </div>
+    )}
+    
+    </>
   )
 }
 

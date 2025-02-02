@@ -13,7 +13,15 @@ dotenv.config({
 
 const app = express();
 const server = createServer(app) ; 
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL ,
+    methods : ["GET" , "POST"],
+    credentials : true
+  },
+});
+
+console.log(process.env.FRONTEND_URL);
 
 setupSocketIOServer(io);
 
@@ -38,11 +46,13 @@ app.get('/' , (req, res)=>{
 })
 
 //api routes
-import authRoute from './routes/auth.routes'
-import chatRoute from './routes/chat.routes'
+import authRoute from './routes/auth.routes';
+import chatRoute from './routes/chat.routes';
+import messageRoute from './routes/message.routes';
 
 app.use("/api/v1/user" , authRoute);
-app.use("/api/v1/chat" , chatRoute )
+app.use("/api/v1/chat" , chatRoute );
+app.use("/api/v1/message" , messageRoute);
 
 server.listen(PORT , ()=>{
     console.log(`The server is up and running on PORT ${PORT}`);

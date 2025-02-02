@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ChatModel" ADD COLUMN     "latestMessageCreatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

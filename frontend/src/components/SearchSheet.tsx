@@ -1,12 +1,14 @@
 "use client"
 
-import { useState , useEffect} from "react"
+import { useState , useEffect , useMemo} from "react"
 import { Plus, Search , Loader2  } from "lucide-react"
 import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { io } from "socket.io-client"
+
 
 interface Person {
     id : String 
@@ -14,15 +16,15 @@ interface Person {
     email : String
 }
 
-// const people: Person[] = [
-//   { id: "1", name: "Alice Johnson", avatar: "/placeholder.svg?height=32&width=32" },
-//   { id: "2", name: "Bob Smith", avatar: "/placeholder.svg?height=32&width=32" },
-//   { id: "3", name: "Charlie Brown", avatar: "/placeholder.svg?height=32&width=32" },
-//   { id: "4", name: "Diana Prince", avatar: "/placeholder.svg?height=32&width=32" },
-//   { id: "5", name: "Ethan Hunt", avatar: "/placeholder.svg?height=32&width=32" },
-// ]
-
 export function PeopleSheet() {
+
+  const socket = useMemo(
+    () =>
+      io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {  
+        withCredentials: true,
+      }),
+    []
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [people , setPeople] = useState<Person[]>([]);
   const [isLoading , setIsLoading] = useState(false);
@@ -49,13 +51,28 @@ export function PeopleSheet() {
   }, [])
 
   const handleAddChatFriend = async(id : String) => {
-
+    
+    const loggedInUser = localStorage.userId ; 
+    const dataToSend = {
+      senderId : loggedInUser , 
+      receiverId : id 
+    }
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/singlechat` , dataToSend ,{
+        headers : {
+          "Content-Type": "application/json",
+        }
+      } 
+      )
+  
+    } catch (error) {
+      console.log("Something went wrong while adding chat" , error); 
+    }
   }
 
-  console.log("This is my people data " , people);
 
   const filteredPeople = people.filter((person) => person.username.toLowerCase().includes(searchQuery.toLowerCase()));
-  console.log("filtered " , filteredPeople);
+  
 
   return (
     <Sheet>

@@ -112,11 +112,47 @@ export const createGroupChat = async (req: Request, res: Response) => {
 };
 
 export const getChats = async(req:Request , res:Response) => {
+  const {id} = req.params ; 
+  //query to find chats in which user with id , id exists 
     try{
-        const chats = await prisma.chatModel.findMany();
+        const chats = await prisma.chatModel.findMany({
+          where:{
+            users : {
+             some : {
+              userId : id  
+             }
+            }
+          } , 
+          include: {
+            users: {
+              include: {
+                user: { select: { username: true , id : true } } // Include the username from the User model @@ join operation
+              }
+            },
+          } 
+        })
+
+        console.log("chats" , chats);
+        const simplifiedChats = chats.map((chat)=>({
+           id : chat.id ,
+           name : chat.name , 
+           isGroup : chat.isGroup , 
+           latestMessage : chat.latestMessage , 
+          
+           createdAt : chat.createdAt , 
+           users : chat.users.map((user)=> (
+            {
+              userId : user.user.id , 
+              username : user.user.username
+            }
+           ))
+
+        }))
+
+
         res.status(200).json({
             message : "chats fetched successfully", 
-            data : chats
+            data : simplifiedChats,
         });
     }catch(error){
         console.log("This is my error" , error);

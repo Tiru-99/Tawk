@@ -1,63 +1,94 @@
+'use client'
 import { Filter, Search } from "lucide-react";
 import FilterTabs from "./FilterTabs";
-import { useState } from "react";
+import { useState , useEffect , useMemo} from "react";
+import { Dispatch , SetStateAction } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { PeopleSheet } from "./SearchSheet";
+import axios from 'axios';
+import { io } from "socket.io-client";
 
 interface ChatsType {
-  id : String 
+  id : string 
   name : String | undefined 
   isGroup : Boolean
-  latestMessage : String
+  latestMessage : String | undefined
+  createdAt : Date
+  users : UserDetailsType[]
 }
 
-export default function LeftBar() {
+interface UserDetailsType {
+  userId : String , 
+  username : String
+}
 
-  const[chats , setChats] = useState<ChatsType[]>([])
+type LeftBarProps = {
+  selectedChat : string  , 
+  setSelectedChat : React.Dispatch<React.SetStateAction<string>>;
+}
+
+export default function LeftBar({selectedChat , setSelectedChat} : LeftBarProps) {
+
+  const socket = useMemo(() => {
+    const newSocket = io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {
+      withCredentials: true,
+    });
+
+    newSocket.on("connect", () => {
+      console.log("Connected to the socket server");
+    });
+
+    return newSocket;
+  }, []);
+
+  const[chats , setChats] = useState<ChatsType[]>([]);
+
+  useEffect(()=>{
+    const loggedInUser = localStorage.userId; 
+    console.log(loggedInUser);
+    axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/getChats/${loggedInUser}`)
+    .then((res) => {
+        setChats(res.data.data);
+    })
+    .catch((error)=>{
+      console.log("Something went wrong" , error );
+    })
+  } , [])
 
 
-    const chatss = [
-        {
-            id: 1,
-            name: "Bhindi Chor",
-            avatar: "BC",
-            lastMessage: "Hi, this is the latest...",
-            time: "9:12 AM",
-        },
+  //utility function to get the name of the other single chat
+  const getOtherUserName = (chat : ChatsType) => {
+   if(chat.isGroup || chat.name != null ) return chat.name ; 
 
-        {
-            id: 2,
-            name: "Aayush",
-            avatar: "AY",
-            lastMessage: "How are you?",
-            time: "10:15 AM",
-        },
+   const userId = localStorage.userId ; 
 
-        {
-            id: 3,
-            name: "Tiru",
-            avatar: "AY",
-            lastMessage: "Hello Sexy?",
-            time: "10:15 AM",
-        },
+   const filteredChat = chat.users.filter((user)=>user.userId !== userId);
+   return filteredChat[0].username ;
+   
+  }
 
-        {
-            id: 4,
-            name: "Advait",
-            avatar: "AY",
-            lastMessage: "Hi Ice Cream khane...",
-            time: "10:15 AM",
-          },
 
-          {
-            id: 5,
-            name: "Mandar",
-            avatar: "AY",
-            lastMessage: "Mi Busy aahe majhy...",
-            time: "10:15 AM",
-          },
-        // Add more chats as needed
-      ];
+  const convertTimeToReadableFormat = (time : Date) =>{
+     // Create a Date object from the ISO string
+      const date = new Date(time);
+
+      // Extract hours and minutes
+      let hours = date.getHours();
+      const minutes = date.getMinutes();
+
+      // Determine AM or PM
+      const ampm = hours >= 12 ? "PM" : "AM";
+
+      // Convert to 12-hour format
+      hours = hours % 12;
+      hours = hours || 12; // Handle midnight (0 hours)
+
+      // Format minutes to always be two digits
+      const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+
+      // Combine into the final readable time string
+      return `${hours}:${formattedMinutes} ${ampm}`;
+  }
 
   return (
     <>
@@ -91,8 +122,11 @@ export default function LeftBar() {
         {/* Chats and Latest Message Section */}
         <div className="mt-4">
             <p className="text-gray-500 font-light mb-3 ">Messages</p>
-            {chatss.map(( chat , index)=>(
-                <div key={index} className="flex justify-between items-center mb-6">
+            {chats.map(( chat , index)=>(
+                <div 
+                 key={index}
+                 className={`flex justify-between items-center mb-6 cursor-pointer ${selectedChat === chat.id  ? "bg-blue-100" : "hover:bg-gray-100"} `}
+                 onClick={()=> setSelectedChat(chat.id)}>
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
                   <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200">
@@ -101,13 +135,13 @@ export default function LeftBar() {
     
                   {/* Chat Info */}
                   <div className="flex flex-col">
-                    <h2 className="text-sm tracking-tight">{chat.name}</h2>
-                    <p className="text-xs text-gray-500">{chat.lastMessage}</p>
+                    <h2 className="text-sm tracking-tight">{getOtherUserName(chat)}</h2>
+                    <p className="text-xs text-gray-500">{chat.latestMessage}</p>
                   </div>
                 </div>
     
                 {/* Time */}
-                <p className="text-xs text-gray-400">{chat.time}</p>
+                <p className="text-xs text-gray-400">{convertTimeToReadableFormat(chat.createdAt)}</p>
               </div>
             ))}
         </div>

@@ -1,6 +1,6 @@
 "use client"
-import { useEffect } from "react";
-import axios from 'axios';
+import { useEffect , useState } from "react";
+import Navbar from "@/components/Navbar";
 import LeftBar from "@/components/LeftBar";
 import ChatBox from "@/components/ChatBox";
 import useAuth from "@/hooks/useAuth";
@@ -21,18 +21,22 @@ export default function Page(){
         }
     },[isAuthenticated , isLoading])
 
+
+    const [selectedChat, setSelectedChat] = useState<string>("");
+
     return(
         <>
+            <Navbar></Navbar>
             <Toaster position="top-center"></Toaster>
             <div className=" bg-gray-100">
                 <div className="flex gap-3 m-2 w-full">
                     <div className="md:w-1/5 w-full">
-                        <LeftBar></LeftBar>
+                        <LeftBar selectedChat = {selectedChat} setSelectedChat = {setSelectedChat}></LeftBar>
 
                     </div>
 
                     <div className="hidden md:w-3/5 md:block">
-                        <ChatBox></ChatBox>
+                        <ChatBox selectedChat = {selectedChat}></ChatBox>
                     </div>
 
                     <div className="md:w-1/5 hidden">

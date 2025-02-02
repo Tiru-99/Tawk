@@ -5,7 +5,7 @@ const router = Router();
 
 router.route("/singlechat").post(createChat);
 router.route("/groupchat").post(createGroupChat);
-router.route("/getchats").get(getChats);
+router.route("/getchats/:id").get(getChats);
 
 
 

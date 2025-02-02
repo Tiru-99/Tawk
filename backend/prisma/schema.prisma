@@ -14,9 +14,9 @@ datasource db {
 }
 
 model User {
-  id          String      @id @default(uuid())
-  username    String      @unique
-  email       String      @unique
+  id          String           @id @default(uuid())
+  username    String           @unique
+  email       String           @unique
   password    String
   profile_pic String?
   messages    Message[]
@@ -29,26 +29,27 @@ model Message {
   createdAt DateTime  @default(now())
   senderId  String
   chatId    String
-  user      User      @relation(fields: [senderId], references: [id])
+  user      User      @relation(fields: [senderId], references: [id] , onDelete: Cascade)
   chat      ChatModel @relation(fields: [chatId], references: [id])
 }
 
 model ChatModel {
-  id        String    @id @default(uuid())
-  name      String?
-  isGroup   Boolean
-  latestMessage String?
-  users     ChatModelUsers[]
-  messages  Message[]
-  createdAt DateTime  @default(now())
+  id                     String           @id @default(uuid())
+  name                   String?
+  isGroup                Boolean
+  latestMessage          String?
+  latestMessageCreatedAt DateTime         @default(now())
+  users                  ChatModelUsers[]
+  messages               Message[]
+  createdAt              DateTime         @default(now())
 }
 
 model ChatModelUsers {
-  userId   String
-  chatId   String
-  user     User      @relation(fields: [userId], references: [id])
-  chat     ChatModel @relation(fields: [chatId], references: [id])
+  userId String
+  chatId String
+  user   User      @relation(fields: [userId], references: [id] , onDelete: Cascade)
+  chat   ChatModel @relation(fields: [chatId], references: [id] , onDelete: Cascade)
+  //to the same chat 
 
   @@id([userId, chatId]) // Composite Primary Key for many-to-many  ensures that user cannot be readded 
-  //to the same chat 
 }
