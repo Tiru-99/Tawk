@@ -1,13 +1,13 @@
 "use client"
 
-import { useState , useEffect , useMemo} from "react"
+import { useState , useEffect , useMemo, use} from "react"
 import { Plus, Search , Loader2  } from "lucide-react"
 import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { io } from "socket.io-client"
+import { io, Socket } from "socket.io-client"
 
 
 interface Person {
@@ -15,16 +15,27 @@ interface Person {
     username : String 
     email : String
 }
+interface ChatsType {
+  id : string 
+  name : String | undefined 
+  isGroup : Boolean
+  latestMessage : String | undefined
+  createdAt : Date
+  users : UserDetailsType[]
+}
 
-export function PeopleSheet() {
+interface UserDetailsType {
+  userId : String , 
+  username : String
+}
 
-  const socket = useMemo(
-    () =>
-      io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {  
-        withCredentials: true,
-      }),
-    []
-  );
+type PeopleSheetProps = {
+  socket : Socket
+  sendChatToParent : (chat : ChatsType) => void
+}
+
+export function PeopleSheet({socket , sendChatToParent} : PeopleSheetProps) {
+
   const [searchQuery, setSearchQuery] = useState("");
   const [people , setPeople] = useState<Person[]>([]);
   const [isLoading , setIsLoading] = useState(false);
@@ -48,27 +59,60 @@ export function PeopleSheet() {
         setIsLoading(false);
     })
 
-  }, [])
+  }, []);
 
-  const handleAddChatFriend = async(id : String) => {
-    
+  useEffect(() => {
+    const handleNewChat = (newChat: ChatsType) => {
+      console.log("new chat in the search sheet received : " , newChat);
+      sendChatToParent(newChat); // ✅ Pass new chat to parent
+    };
+
+    socket.on("new-chat-added", handleNewChat);
+
+    return () => {
+      socket.off("new-chat-added", handleNewChat); // ✅ Cleanup listener
+    };
+  }, [socket, sendChatToParent]);
+
+  console.log("This is my username in localstorage " , localStorage.username);
+
+  const handleAddChatFriend = async(id : String , name : String) => {
     const loggedInUser = localStorage.userId ; 
+    const loggedInUserUsername = localStorage.username ; 
+    console.log("This is my localstorage user name " , localStorage.username)
+
     const dataToSend = {
       senderId : loggedInUser , 
-      receiverId : id 
-    }
-    try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/singlechat` , dataToSend ,{
-        headers : {
-          "Content-Type": "application/json",
-        }
-      } 
-      )
-  
-    } catch (error) {
-      console.log("Something went wrong while adding chat" , error); 
-    }
+      receiverId : id ,
+      senderUsername : loggedInUserUsername,
+      receiverUsername : name 
+    }                 
+
+    socket.emit("create-single-chat" , dataToSend);
   }
+
+
+
+
+  // const handleAddChatFriend = async(id : String) => {
+    
+  //   const loggedInUser = localStorage.userId ; 
+  //   const dataToSend = {
+  //     senderId : loggedInUser , 
+  //     receiverId : id 
+  //   }
+  //   try {
+  //     const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/singlechat` , dataToSend ,{
+  //       headers : {
+  //         "Content-Type": "application/json",
+  //       }
+  //     } 
+  //     )
+  
+  //   } catch (error) {
+  //     console.log("Something went wrong while adding chat" , error); 
+  //   }
+  // }
 
 
   const filteredPeople = people.filter((person) => person.username.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -107,11 +151,13 @@ export function PeopleSheet() {
                     </Avatar>
                     <span className="font-medium">{person.username}</span>
                   </div>
-                  <Button size="icon" variant="ghost"
-                  onClick={() => handleAddChatFriend(person.id)}>
-                    <Plus className="h-4 w-4" />
-                    <span className="sr-only">Add {person.username}</span>
-                  </Button>
+                  <SheetClose asChild>
+                    <Button size="icon" variant="ghost"
+                    onClick={() =>handleAddChatFriend(person.id , person.username)}>
+                      <Plus className="h-4 w-4" />
+                      <span className="sr-only">Add {person.username}</span>
+                    </Button>
+                  </SheetClose>
                 </div>
               ))
             )}

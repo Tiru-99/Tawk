@@ -15,6 +15,73 @@ export const setupSocketIOServer = (io : Server) => {
             console.log("Chat joined successfully");
         });
 
+        //socket controller to create a single chat 
+
+        socket.on("create-single-chat" , async(chatCreateData) => {
+            const{senderId , receiverId , senderUsername , receiverUsername } = chatCreateData ; 
+            console.log("Sender Username : " , senderUsername);
+            console.log("Receiver Username :" , receiverUsername);
+
+            const existingChat = await prisma.chatModel.findFirst({
+                where: {
+                  isGroup: false,
+                  users: {
+                    some: {
+                      userId: senderId,
+                    },
+                  },
+                },
+                include: {
+                  users: true,
+                },
+              });
+          
+              if (existingChat) {
+                const isChatWithReceiver = existingChat.users.some(
+                  (user) => user.userId === receiverId
+                );
+          
+                if (isChatWithReceiver) {
+                   socket.emit("Chat with this id already exists");
+                   return ;
+                }
+              }
+
+              const newChat = await prisma.chatModel.create({
+                data: {
+                  name : null ,
+                  isGroup: false 
+                },
+                
+              });
+              
+
+             const chatusers = await prisma.chatModelUsers.createMany({
+                data : [
+                    { userId: senderId, chatId: newChat.id },
+                    { userId: receiverId, chatId: newChat.id },
+                ]
+            });
+
+            console.log("These are my new chat users" , chatusers);
+
+            const simplifiedChat = {
+                id: newChat.id,
+                name: newChat.name,
+                isGroup: newChat.isGroup,
+                latestMessage: newChat.latestMessage,
+                createdAt: newChat.createdAt,
+                users: [
+                  { userId: senderId, chatId: newChat.id , username : senderUsername},
+                  { userId: receiverId, chatId: newChat.id , username : receiverUsername },
+                ]
+              };
+
+              console.log("user added successfully" , simplifiedChat);
+              //message to emit that the new chat has been added 
+              io.emit("new-chat-added", simplifiedChat);
+        })
+
         socket.on('get-chats' , async(userId : string) => {
             try{
                 const chats = await prisma.chatModel.findMany({
@@ -52,7 +119,7 @@ export const setupSocketIOServer = (io : Server) => {
                 }))
         
         
-               io.emit("get-all-chats" , simplifiedChats);
+               socket.emit("get-all-chats" , simplifiedChats);
             }catch(error){
                 console.log("This is my error" , error);
                 socket.emit("Something went wrong while fetching chats" , error);

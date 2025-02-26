@@ -1,5 +1,5 @@
 "use client"
-import { useEffect , useState } from "react";
+import { useEffect , useState , useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import LeftBar from "@/components/LeftBar";
 import ChatBox from "@/components/ChatBox";
@@ -7,7 +7,10 @@ import useAuth from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Toaster , toast } from "sonner";
 
+
+
 export default function Page(){
+
 
     const {isAuthenticated , isLoading} = useAuth(); 
     const router = useRouter(); 
@@ -31,7 +34,7 @@ export default function Page(){
             <div className=" bg-gray-100">
                 <div className="flex gap-3 m-2 w-full">
                     <div className="md:w-1/5 w-full">
-                        <LeftBar selectedChat = {selectedChat} setSelectedChat = {setSelectedChat}></LeftBar>
+                        <LeftBar  selectedChat = {selectedChat} setSelectedChat = {setSelectedChat}></LeftBar>
 
                     </div>
 

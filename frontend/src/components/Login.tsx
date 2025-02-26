@@ -40,12 +40,13 @@ export default function Login() {
 
          setIsLoading(false);
          toast.success("Successfully Logged In !")
-         localStorage.setItem("userId" , response.data.userId)
+         localStorage.setItem("userId" , response.data.userId);
          localStorage.setItem("username" , response.data.username);
          localStorage.setItem("profile_pic" , response.data.profile_pic);
          router.push('/home')
  
          console.log("Response : " , response)
+         console.log("ls username : " , localStorage.username);
        } catch (error : any ) {
             console.log("Error : " , error);
             setError(error.response.data.message);

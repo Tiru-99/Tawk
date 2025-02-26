@@ -38,7 +38,7 @@ export const getMessagesByChatId = async(req : Request , res : Response) => {
         },
       });
  
-     console.log("These are my room related messages " , messages);
+    //  console.log("These are my room related messages " , messages);
      res.json({
         message : "Successfully fetched the chat messages" , 
         data : messages

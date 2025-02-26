@@ -5,8 +5,9 @@ import { useState , useEffect , useMemo} from "react";
 import { Dispatch , SetStateAction } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { PeopleSheet } from "./SearchSheet";
-import axios from 'axios';
+
 import { io } from "socket.io-client";
+
 
 interface ChatsType {
   id : string 
@@ -27,44 +28,76 @@ type LeftBarProps = {
   setSelectedChat : React.Dispatch<React.SetStateAction<string>>;
 }
 
-export default function LeftBar({selectedChat , setSelectedChat} : LeftBarProps) {
+export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps) {
 
-  const socket = useMemo(() => {
-    const newSocket = io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {
-      withCredentials: true,
-    });
-
-    newSocket.on("connect", () => {
-      console.log("Connected to the socket server");
-    });
-
-    return newSocket;
-  }, []);
+  const socket = useMemo(
+    () =>
+      io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {  
+        withCredentials: true,
+      }),
+    []
+  );
 
   const[chats , setChats] = useState<ChatsType[]>([]);
+  const[chat , setChat] = useState() ; 
+  const[newChat , setNewChat] = useState<ChatsType>(); 
 
   useEffect(()=>{
+    
     const loggedInUser = localStorage.userId; 
+    socket.emit("get-chats" , loggedInUser);
     console.log(loggedInUser);
-    axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/getChats/${loggedInUser}`)
-    .then((res) => {
-        setChats(res.data.data);
+
+    socket.on("get-all-chats" , (chats : ChatsType[] ) => {
+      setChats(chats);
     })
-    .catch((error)=>{
-      console.log("Something went wrong" , error );
-    })
-  } , [])
+
+    socket.on("new-chat-added" , (newChat) => {
+      setChat(newChat);
+      console.log("SearchSheet component me chat aagya" , newChat)
+    } )
+
+    return ()=> {
+      socket.off("new-chat-added"); 
+    }
 
 
+    // axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/getChats/${loggedInUser}`)
+    // .then((res) => {
+    //     setChats(res.data.data);
+    // })
+    // .catch((error)=>{
+    //   console.log("Something went wrong" , error );
+    // })
+  } , [socket])
+
+  console.log("Thiis is my new chat " ,newChat);
+
+  useEffect(()=>{
+    if(newChat){
+      console.log("The code is coming here");
+      const username = getOtherUserName(newChat);
+      console.log("The other username is " , username);
+      const newChatWithOtherUserName = {...newChat , name : getOtherUserName(newChat)}
+      setChats((prevState)=> [...prevState , newChatWithOtherUserName]);
+    }
+  },[newChat]);
+
+  //function to pass new chat from child to parent 
+  const handleNewChat = (newChat : ChatsType) => {
+    setNewChat(newChat);
+    console.log("new chat :", newChat);
+  }
+  console.log("This is my new chat that is added " , newChat);
   //utility function to get the name of the other single chat
   const getOtherUserName = (chat : ChatsType) => {
    if(chat.isGroup || chat.name != null ) return chat.name ; 
 
-   const userId = localStorage.userId ; 
-
+   const userId = localStorage.userId ;
+  
    const filteredChat = chat.users.filter((user)=>user.userId !== userId);
-   return filteredChat[0].username ;
-   
+   console.log("This is the filteredChat" , filteredChat);
+   return filteredChat[0]?.username;
   }
 
 
@@ -110,7 +143,7 @@ export default function LeftBar({selectedChat , setSelectedChat} : LeftBarProps)
 
           {/* Search Icon */}
           <div className="flex items-center">
-           <PeopleSheet></PeopleSheet>
+           <PeopleSheet socket = {socket} sendChatToParent = {handleNewChat}></PeopleSheet>
             
           </div>
         </div>
@@ -136,7 +169,7 @@ export default function LeftBar({selectedChat , setSelectedChat} : LeftBarProps)
                   {/* Chat Info */}
                   <div className="flex flex-col">
                     <h2 className="text-sm tracking-tight">{getOtherUserName(chat)}</h2>
-                    <p className="text-xs text-gray-500">{chat.latestMessage}</p>
+                    <p className="text-xs text-gray-500">{chat.latestMessage && chat.latestMessage.length > 25 ? (chat.latestMessage?.slice(0 , 25) + '...') : (chat.latestMessage)}</p>
                   </div>
                 </div>
     

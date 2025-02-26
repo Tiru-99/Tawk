@@ -2,6 +2,7 @@ import { Request , Response } from "express";
 import prisma from "../utils/prisma";
 import bcrypt from 'bcrypt'
 import jwt, { decode } from 'jsonwebtoken';
+import { profile } from "console";
 
 
 export const handleSignUp = async(req : Request , res : Response) => {
@@ -85,7 +86,9 @@ export const loginHandler = async (req: Request, res: Response) => {
         .json({
           message: "User has been successfully Logged In",
           token: jwtToken, 
-          userId: userExists.id
+          userId: userExists.id,
+          username : userExists.username , 
+          profile_pic : userExists.profile_pic
         });
     } catch (error) {
       console.log("this is the error" ,error);
