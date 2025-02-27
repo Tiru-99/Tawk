@@ -5,6 +5,8 @@ import { useState , useEffect , useMemo} from "react";
 import { Dispatch , SetStateAction } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { PeopleSheet } from "./SearchSheet";
+import { HiUserGroup } from "react-icons/hi2";
+import { CreateGroupDialog } from "./CreateGroupDialog";
 
 import { io } from "socket.io-client";
 
@@ -37,9 +39,10 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
       }),
     []
   );
-
+  console.log("localstorage id " , localStorage.userId);
   const[chats , setChats] = useState<ChatsType[]>([]);
   const[chat , setChat] = useState() ; 
+  const[fetchAgain , setFetchAgain]= useState(false);
   const[newChat , setNewChat] = useState<ChatsType>(); 
 
   useEffect(()=>{
@@ -69,15 +72,11 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
     // .catch((error)=>{
     //   console.log("Something went wrong" , error );
     // })
-  } , [socket])
+  } , [socket , fetchAgain])
 
-  console.log("Thiis is my new chat " ,newChat);
 
   useEffect(()=>{
     if(newChat){
-      console.log("The code is coming here");
-      const username = getOtherUserName(newChat);
-      console.log("The other username is " , username);
       const newChatWithOtherUserName = {...newChat , name : getOtherUserName(newChat)}
       setChats((prevState)=> [...prevState , newChatWithOtherUserName]);
     }
@@ -88,7 +87,8 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
     setNewChat(newChat);
     console.log("new chat :", newChat);
   }
-  console.log("This is my new chat that is added " , newChat);
+
+
   //utility function to get the name of the other single chat
   const getOtherUserName = (chat : ChatsType) => {
    if(chat.isGroup || chat.name != null ) return chat.name ; 
@@ -142,9 +142,9 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
           </div>
 
           {/* Search Icon */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
            <PeopleSheet socket = {socket} sendChatToParent = {handleNewChat}></PeopleSheet>
-            
+           <CreateGroupDialog setFetchAgain = {setFetchAgain}></CreateGroupDialog> 
           </div>
         </div>
 
@@ -169,7 +169,9 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
                   {/* Chat Info */}
                   <div className="flex flex-col">
                     <h2 className="text-sm tracking-tight">{getOtherUserName(chat)}</h2>
-                    <p className="text-xs text-gray-500">{chat.latestMessage && chat.latestMessage.length > 25 ? (chat.latestMessage?.slice(0 , 25) + '...') : (chat.latestMessage)}</p>
+                    <p className="text-xs text-gray-500">{
+                     chat.latestMessage && chat.latestMessage.length > 25 ? 
+                    (chat.latestMessage?.slice(0 , 25) + '...') : (chat.latestMessage)}</p>
                   </div>
                 </div>
     
