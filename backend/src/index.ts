@@ -5,6 +5,8 @@ import {createServer} from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors'
 import { setupSocketIOServer } from './socket';
+import compression from 'compression';
+import { setUpMediaSoupServer } from './mediasoup';
 
 dotenv.config({
     path:'./.env'
@@ -24,10 +26,13 @@ const io = new Server(server, {
 console.log(process.env.FRONTEND_URL);
 
 setupSocketIOServer(io);
+setUpMediaSoupServer(io);
 
 app.use(express.json({limit: "16kb"}))
 app.use(express.urlencoded({extended: true, limit: "16kb"}))
 app.use(express.static("public"))
+//to compress api requests
+app.use(compression());
 app.use(cookieParser())
 app.use(
     cors({

@@ -95,7 +95,7 @@ export const setupSocketIOServer = (io : Server) => {
                   include: {
                     users: {
                       include: {
-                        user: { select: { username: true , id : true } } // Include the username from the User model @@ join operation
+                        user: { select: { username: true , id : true , profile_pic : true} } // Include the username from the User model @@ join operation
                       }
                     },
                   } 
@@ -112,7 +112,9 @@ export const setupSocketIOServer = (io : Server) => {
                    users : chat.users.map((user)=> (
                     {
                       userId : user.user.id , 
-                      username : user.user.username
+                      username : user.user.username ,
+                      profile_pic : user.user.profile_pic
+                      
                     }
                    ))
         

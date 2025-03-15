@@ -33,6 +33,27 @@ interface MessageUserProps {
   profile_pic : string
 }
 
+interface User {
+  id : string 
+  username : string 
+  email : string 
+  profile_pic: string
+}
+
+interface ChatUser {
+  userId : string 
+  chatId : string 
+  user : User
+}
+
+interface ChatDetailsProps {
+  createdAt : Date 
+  id :String 
+  name : String 
+  isGroup : boolean 
+  users : ChatUser[]
+}
+
 type ChatBoxProps = {
   selectedChat : string 
 }
@@ -43,6 +64,7 @@ export default function ChatBox({selectedChat} : ChatBoxProps) {
   
   const[messages , setMessages] = useState<MessageProps[]>([]);
   const[message , setMessage] = useState<string>("");
+  const[chatDetails , setChatDetails] = useState<ChatDetailsProps>(); 
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
 
 
@@ -70,16 +92,16 @@ export default function ChatBox({selectedChat} : ChatBoxProps) {
 
       // Fetch messages when the chat is selected
       axios
-      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/message/getmessages/${selectedChat}`)
-      .then((res) => {
-        console.log("The code is coming here")
+      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/message/getmessages/${selectedChat}/${localStorage.userId}`)
+      .then((res) => {    
         setMessages(res.data.data);
-        console.log("this is my user details " , res.data.data.user);
+        setChatDetails(res.data.chatDetails);
         console.log("Fetched messages: ", res.data.data);
       })
       .catch((error) => {
         console.log("Error fetching messages: ", error);
       });
+      
 
        // Handle incoming messages
     const handleNewMessage = (newMessage:MessageProps) => {
@@ -91,13 +113,13 @@ export default function ChatBox({selectedChat} : ChatBoxProps) {
     socket.on("new-message", handleNewMessage);
     //scroll to the last message 
    
-
     // Cleanup function to remove event listener when component unmounts
     return () => {
       socket.off("new-message", handleNewMessage);
     };
   } ,[selectedChat]);
 
+  
 
   useEffect(()=> {
     //scroll to the last message 
@@ -138,8 +160,8 @@ export default function ChatBox({selectedChat} : ChatBoxProps) {
             />
           </div>
           <div>
-            <h1 className="font-semibold">United Family</h1>
-            <p className="text-sm text-green-500">Rashford is typing...</p>
+            <h1 className="font-semibold cursor-pointer">{chatDetails?.name}</h1>
+            <p className="text-sm text-green-500">Tiru is typing...</p>
           </div>
         </div>
         <div className="flex items-center gap-4">

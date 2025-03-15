@@ -30,7 +30,7 @@ model Message {
   senderId  String
   chatId    String
   user      User      @relation(fields: [senderId], references: [id] , onDelete: Cascade)
-  chat      ChatModel @relation(fields: [chatId], references: [id])
+  chat      ChatModel @relation(fields: [chatId], references: [id] , onDelete : Cascade)
 }
 
 model ChatModel {

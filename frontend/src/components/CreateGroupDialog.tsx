@@ -27,24 +27,6 @@ interface Person {
 }
 
 
-
-// Mock data - replace with your actual users data
-// const USERS: User[] = [
-//   {
-//     id: "1",
-//     username: "Alice Smith",
-//     email: "alice@example.com",
-//     profile_pic: "/placeholder.svg?height=40&width=40",
-//   },
-//   {
-//     id: "2",
-//     username: "Bob Johnson",
-//     email: "bob@example.com",
-//     profile_pic: "/placeholder.svg?height=40&width=40",
-//   },
-//   // Add more users as needed
-// ]
-
 type CreateGroupDialogProps = {
     
     setFetchAgain : React.Dispatch<SetStateAction<boolean>>
@@ -84,13 +66,10 @@ export function CreateGroupDialog({setFetchAgain} : CreateGroupDialogProps) {
 
     }
 
-    console.log("selected users" , selectedUsers);
 
     const toggleUser = (userId: string) => {
         setSelectedUsers((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]))
     }
-
-    console.log("selected users : ", selectedUsers);
 
     useEffect(() => {
         setIsLoading(true)

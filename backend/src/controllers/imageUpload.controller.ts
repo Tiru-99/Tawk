@@ -12,17 +12,6 @@ export const uploadProfilePic = async (req: Request, res: Response) => {
 
         let url = await postObjectUrl(`profile_pic_${id}`, fileType as string);
 
-        //updating the profile pic 
-
-        await prisma.user.update({
-            where: {
-                id: id
-            },
-            data: {
-                profile_pic: `profile_pic_${id}`
-            }
-        })
-
         res.status(200).json({
             message: "Url fetched successfully",
             url: url
@@ -37,38 +26,22 @@ export const uploadProfilePic = async (req: Request, res: Response) => {
 
 }
 
-export const updateProfilePic = async (req: Request, res: Response) => {
-    try {
-        const { profile_pic } = req.body;
-        const { id } = req.body;
-        await prisma.user.update({
-            where: {
-                id: id
-            },
-            data: {
-                profile_pic: profile_pic
-            }
-        });
-
-        res.status(200).json({
-            message: "Profile Pic updated successfully",
-            image: profile_pic
-        });
-    } catch (error) {
-        console.log("Something went wrong while updating the profile pic", error);
-        res.status(500).json({
-            message: "Something went wrong while updating the profile pic",
-            error: error
-        });
-        return;
-    }
-}
 
 export const getProfilePic = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
         const imageUrl = await getObjectUrl(`/profile_pic/profile_pic_${id}`);
+
+        //update the image in the database with every get object call
+        await prisma.user.update({
+            where :{
+                id : id 
+            } ,
+            data : {
+                profile_pic : imageUrl
+            }
+        });
 
         // Sending image url 
         res.status(201).json({

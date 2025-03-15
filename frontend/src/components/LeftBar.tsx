@@ -1,13 +1,10 @@
 'use client'
-import { Filter, Search } from "lucide-react";
+
 import FilterTabs from "./FilterTabs";
 import { useState , useEffect , useMemo} from "react";
-import { Dispatch , SetStateAction } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { PeopleSheet } from "./SearchSheet";
-import { HiUserGroup } from "react-icons/hi2";
 import { CreateGroupDialog } from "./CreateGroupDialog";
-
+import { Avatar , AvatarFallback , AvatarImage } from "@radix-ui/react-avatar";
 import { io } from "socket.io-client";
 
 
@@ -22,7 +19,8 @@ interface ChatsType {
 
 interface UserDetailsType {
   userId : String , 
-  username : String
+  username : String ,
+  profile_pic : String , 
 }
 
 type LeftBarProps = {
@@ -42,6 +40,11 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
   console.log("localstorage id " , localStorage.userId);
   const[chats , setChats] = useState<ChatsType[]>([]);
   const[chat , setChat] = useState() ; 
+  const[otherUserDetails , setOtherUserDetails] = useState({
+    userId : "",
+    username :"",
+    profile_pic : ""
+  });
   const[fetchAgain , setFetchAgain]= useState(false);
   const[newChat , setNewChat] = useState<ChatsType>(); 
 
@@ -58,7 +61,7 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
     socket.on("new-chat-added" , (newChat) => {
       setChat(newChat);
       console.log("SearchSheet component me chat aagya" , newChat)
-    } )
+    })
 
     return ()=> {
       socket.off("new-chat-added"); 
@@ -88,6 +91,7 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
     console.log("new chat :", newChat);
   }
 
+  console.log("Chats" , chats);
 
   //utility function to get the name of the other single chat
   const getOtherUserName = (chat : ChatsType) => {
@@ -98,6 +102,16 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
    const filteredChat = chat.users.filter((user)=>user.userId !== userId);
    console.log("This is the filteredChat" , filteredChat);
    return filteredChat[0]?.username;
+  }
+
+  const getOtherProfilePic = (chat : ChatsType) => {
+    if(chat.isGroup || chat.name != null ) return chat.name ; 
+
+    const userId = localStorage.userId ;
+   
+    const filteredChat = chat.users.filter((user)=>user.userId !== userId);
+    console.log("This is the filteredChat" , filteredChat);
+    return filteredChat[0]?.profile_pic;
   }
 
 
@@ -122,6 +136,7 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
       // Combine into the final readable time string
       return `${hours}:${formattedMinutes} ${ampm}`;
   }
+  console.log("image" , localStorage.profile_pic);
 
   return (
     <>
@@ -130,13 +145,22 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
             {/* Avatar */}
-            <div className="h-12 w-12 flex justify-center items-center rounded-full bg-gray-200">
-              <div className="text-center font-semibold">AB</div>
-            </div>
+            <Avatar className="relative h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
+              <AvatarImage
+                src={localStorage.getItem("profile_pic") || ""}
+                alt="User Profile"
+                className="h-full w-full object-cover"
+              />
+              <AvatarFallback className="absolute inset-0 flex items-center justify-center text-center font-semibold text-gray-600 bg-gray-300">
+                {localStorage.getItem("username")?.slice(0, 2).toUpperCase() || "AB"}
+              </AvatarFallback>
+            </Avatar>
+
+
 
             {/* User Info */}
             <div className="flex flex-col justify-center">
-              <h2 className="text-md tracking-tight">Aayush</h2>
+              <h2 className="text-md tracking-tight">{localStorage.username}</h2>
               <p className="text-xs text-gray-500">Info Account</p>
             </div>
           </div>
@@ -162,9 +186,18 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
                  onClick={()=> setSelectedChat(chat.id)}>
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
-                  <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200">
-                    <div className="text-center font-semibold">BC</div>
-                  </div>
+                   <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200">
+                      {getOtherProfilePic(chat) ? (
+                        <img
+                          className="w-full h-full object-cover rounded-full"
+                          src={`${getOtherProfilePic(chat)}`}
+                          alt="Profile"
+                        />
+                      ) : (
+                        <div className="text-center font-semibold">BC</div>
+                      )}
+                   </div> 
+
     
                   {/* Chat Info */}
                   <div className="flex flex-col">

@@ -26,7 +26,8 @@ interface ChatsType {
 
 interface UserDetailsType {
   userId : String , 
-  username : String
+  username : String , 
+  profile_pic : String 
 }
 
 type PeopleSheetProps = {
@@ -74,12 +75,10 @@ export function PeopleSheet({socket , sendChatToParent} : PeopleSheetProps) {
     };
   }, [socket, sendChatToParent]);
 
-  console.log("This is my username in localstorage " , localStorage.username);
 
   const handleAddChatFriend = async(id : String , name : String) => {
     const loggedInUser = localStorage.userId ; 
     const loggedInUserUsername = localStorage.username ; 
-    console.log("This is my localstorage user name " , localStorage.username)
 
     const dataToSend = {
       senderId : loggedInUser , 

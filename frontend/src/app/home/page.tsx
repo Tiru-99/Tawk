@@ -11,7 +11,6 @@ import { Toaster , toast } from "sonner";
 
 export default function Page(){
 
-
     const {isAuthenticated , isLoading} = useAuth(); 
     const router = useRouter(); 
 
