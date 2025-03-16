@@ -1,5 +1,5 @@
 import { Server , Socket } from "socket.io";
-import { createWorker } from "./utils/helpers";
+import { createMediasoupWorker } from "./utils/helpers";
 import { config } from './utils/config';
 import { Producer } from "mediasoup/node/lib/types";
 import { createWebRTCTransport } from "./utils/helpers";
@@ -12,6 +12,8 @@ interface Room {
     producers: { [socketId: string]: Producer };
 }
 
+let router : Router; 
+
 const rooms: { [meetId: string]: Room } = {}; 
 
 export const setUpMediaSoupServer = (io: Server) => {
@@ -22,22 +24,44 @@ export const setUpMediaSoupServer = (io: Server) => {
             meetId = id;
             socket.join(meetId);
             console.log(`User ${socket.id} joined meet: ${meetId}`);
-
+        
             if (!rooms[meetId]) {
                 // Create room if it doesn't exist
-                const worker = await createWorker();
-                const router = await worker.createRouter({
+                const worker = await createMediasoupWorker();
+                if (!worker) {
+                    console.error("No worker found");
+                    return;
+                }
+        
+                router = await worker.createRouter({
                     mediaCodecs: config.mediaSoup.router.mediaCodecs,
                 });
-
+        
                 rooms[meetId] = {
                     router,
                     producerTransports: {},
                     consumerTransports: {},
                     producers: {},
                 };
+        
+                console.log(`Room ${meetId} created with a new router`);
+            } else {
+                console.log(`User ${socket.id} joined existing room: ${meetId}`);
+            }
+        
+            // Ensure router is always defined
+            router = rooms[meetId].router;
+            if (!router) {
+                console.error("Router not found after room creation");
+                return;
             }
         });
+        
+
+        //get router rtp capabilities 
+        socket.on("getRouterRtpCapabilities" , async(data , callback)=>{
+            await callback(router.rtpCapabilities);
+        })
 
         // Create Producer Transport
         socket.on("createProducerTransport", async (_, callback) => {
@@ -98,10 +122,10 @@ export const setUpMediaSoupServer = (io: Server) => {
 
                 const { kind, rtpParameters } = data;
                 const producer = await rooms[meetId].producerTransports[socket.id].produce({ kind, rtpParameters });
+                const socketId = socket.id; 
+                rooms[meetId].producers[socketId] = producer;
 
-                rooms[meetId].producers[socket.id] = producer;
-
-                callback({ id: producer.id });
+                callback({ id: producer.id , producerSocketId : socketId});
 
                 // Notify others in the room about the new producer
                 socket.to(meetId).emit("new-producer", { socketId: socket.id });

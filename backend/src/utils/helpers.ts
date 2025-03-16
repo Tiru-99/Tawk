@@ -1,16 +1,17 @@
 
-import mediasoup from 'mediasoup';
+import * as mediasoup from 'mediasoup';
 import { config } from './config';
 import { Router } from 'mediasoup/node/lib/RouterTypes';
 
-export const createWorker = async() => {
+export const createMediasoupWorker = async() => {
     //create a mediasoup worker 
-    const newWorker = await mediasoup.createWorker({
-        rtcMinPort : 2000, 
-        rtcMaxPort : 2020
-    });
+    try {
+      const newWorker = await mediasoup.createWorker({
+          rtcMinPort : 2000, 
+          rtcMaxPort : 2020
+      });
 
-    console.log("Worker process id" , newWorker.pid)
+      console.log("Worker process id" , newWorker.pid)
 
     newWorker.on("died" , (error)=> {
         console.error("Mediasoup worker has died ");
@@ -21,6 +22,9 @@ export const createWorker = async() => {
     });
     
     return newWorker; 
+    } catch (error) {
+      console.log("Something went wrong while creating a worker" , error);
+    }
 
 }
 
