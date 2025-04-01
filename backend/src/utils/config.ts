@@ -30,8 +30,8 @@ export const config = {
         webRTCTransport : {
             listenIps: [
                 {
-                  ip: '127.0.0.1',
-                  announcedIp: "",
+                  ip: '0.0.0.0',
+                  announcedIp: "172.16.150.238",
                 }
               ] as ListenIpsProps[],
               maxIncomingBitrate: 1500000,

@@ -24,6 +24,7 @@ export const createMediasoupWorker = async() => {
     return newWorker; 
     } catch (error) {
       console.log("Something went wrong while creating a worker" , error);
+      throw error;
     }
 
 }
