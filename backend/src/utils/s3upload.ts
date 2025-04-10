@@ -16,11 +16,11 @@ const s3 = new S3Client({
 });
 
 //using the presignedUrl approach 
-export async function postObjectUrl(filename : string , contentType : string){
+export async function postObjectUrl(dirname : string , filename : string , contentType : string ){
     //sending an api request to aws 
     const params = { 
         Bucket: "tiru-chatapp",
-        Key : '/profile_pic/' + filename , 
+        Key : dirname + filename , 
         ContentType : contentType
     }
 

@@ -24,13 +24,15 @@ model User {
 }
 
 model Message {
-  id        String    @id @default(uuid())
-  content   String
-  createdAt DateTime  @default(now())
+  id        String      @id @default(uuid())
+  type      MessageType
+  content   String?
+  imageUrl  String? 
+  createdAt DateTime    @default(now())
   senderId  String
   chatId    String
-  user      User      @relation(fields: [senderId], references: [id] , onDelete: Cascade)
-  chat      ChatModel @relation(fields: [chatId], references: [id] , onDelete : Cascade)
+  user      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  chat      ChatModel   @relation(fields: [chatId], references: [id], onDelete: Cascade)
 }
 
 model ChatModel {
@@ -47,9 +49,14 @@ model ChatModel {
 model ChatModelUsers {
   userId String
   chatId String
-  user   User      @relation(fields: [userId], references: [id] , onDelete: Cascade)
-  chat   ChatModel @relation(fields: [chatId], references: [id] , onDelete: Cascade)
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat   ChatModel @relation(fields: [chatId], references: [id], onDelete: Cascade)
   //to the same chat 
 
   @@id([userId, chatId]) // Composite Primary Key for many-to-many  ensures that user cannot be readded 
+}
+
+enum MessageType {
+  IMAGE
+  TEXT
 }

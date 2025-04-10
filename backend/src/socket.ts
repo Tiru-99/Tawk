@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import prisma from "./utils/prisma";
+import { v4 as uuidv4 } from 'uuid';
 
 interface SingleChatProps {
     senderId : string , 
@@ -129,43 +130,50 @@ export const setupSocketIOServer = (io : Server) => {
             }
         } )
 
-        socket.on("send-message" , async(data) => {
-            const { content , senderId , chatId} = data; 
-
-            //check if the data is receiveed
-            if(!content || !senderId || !chatId){
-                return socket.emit('error' , {message : "Invalid Data in the socket"})
+        socket.on("send-message", async (data) => {
+          const { content, senderId, chatId , imageUrl} = data;
+          console.log("The code is reaching here in the socket part");
+          // 1. Basic validation
+          if ((!content || !senderId || !chatId) && !imageUrl) {
+            return socket.emit("error", { message: "Invalid data" });
+          }
+        
+          try {
+            // 2. Fetch sender details
+            const senderDetails = await prisma.user.findUnique({
+              where: { id: senderId },
+              select: { id: true, username: true, profile_pic: true }, // only required fields
+            });
+        
+            if (!senderDetails) {
+              return socket.emit("error", { message: "Sender not found" });
             }
+        
+            // 3. Construct enriched message
+            const enrichedMessage = {
+              id : uuidv4(),
+              content,
+              chatId,
+              imageUrl,
+              // timestamp: new Date().toISOString(),
+              senderId: senderDetails.id,
+              user: {
+                userId: senderDetails.id,
+                username: senderDetails.username,
+                profile_pic: senderDetails.profile_pic,
+              },
+            };
 
-            try {
-                //save the message
-                const message = await prisma.message.create({
-                    data : {
-                        content , 
-                        senderId, 
-                        chatId
-                    } , 
-                    include :{
-                        user : true 
-                    }
-                });
-
-                //update the latest message
-                await prisma.chatModel.update({
-                    where : {
-                        id : chatId
-                    } , 
-                    data : {
-                        latestMessage : content 
-                    }
-                })
-                //Broadcast the message to the group 
-                io.to(chatId).emit("new-message" , message)
-            } catch (error) {
-                console.log("Error saving message" , error);
-                socket.emit('error' , {message : "Failed to send message"})
-            }
-        })
+            console.log("the enriched message" , enrichedMessage);
+        
+            // 4. Emit enriched message to room
+            io.to(chatId).emit("new-message", enrichedMessage);
+          } catch (err) {
+            console.error("Error in send-message:", err);
+            socket.emit("error", { message: "Internal server error" });
+          }
+        });
+        
 
         socket.on("disconnect" , ()=> {
             console.log(`User disconnected : ${socket.id}`)

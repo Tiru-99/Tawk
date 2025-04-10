@@ -8,8 +8,8 @@ import { Router , Transport } from "mediasoup/node/lib/types";
 interface Room {
     router: Router;
     producerTransports: { [socketId: string]: Transport };
-    consumerTransports: { [socketId: string]: Transport };
-    producers: { [id: string]: Producer };
+    consumerTransports: { [socketId: string]: {audio : Transport  , video : Transport} };
+    producers: { [id: string]: {audio : Producer | null , video : Producer | null}};
     consumers : {[id : string] : Consumer}
 }
 
@@ -119,20 +119,41 @@ export const setUpMediaSoupServer = (io: Server) => {
         });
 
         // Create Consumer Transport
-        socket.on("createConsumerTransport", async (_, callback) => {
+        socket.on("createConsumerTransport", async (data, callback) => {
             try {
 
                 if (!meetId) return callback({ error: "Not in a meeting" });
                 console.log("Room is " , rooms);
 
+                const { kind } = data; 
+
+                if(!["video" , "audio"].includes(kind)){
+                    callback({error : "Invalid Kind"});
+                    return; 
+                }
+
                 console.log("here the router is " , rooms[meetId].router);
 
-                const { transport, params } = await createWebRTCTransport(rooms[meetId].router);
-                
-                rooms[meetId].consumerTransports[socket.id] = transport;
-                console.log("Consumer Transports" , rooms[meetId].consumerTransports[socket.id])
+                if (!rooms[meetId].consumerTransports[socket.id]) {
+                    rooms[meetId].consumerTransports[socket.id] = {} as any;
+                }
 
-                callback({...params , socketId : socket.id});
+                // Initialize the consumerTransports[socket.id] object if not already
+                // possible chances of errors here 
+                // if (!rooms[meetId].consumerTransports[socket.id]) {
+                //     rooms[meetId].consumerTransports[socket.id] = { audio: null, video: null };
+                // }
+
+                if(kind === "audio"){
+                    const { transport, params } = await createWebRTCTransport(rooms[meetId].router);
+                    rooms[meetId].consumerTransports[socket.id].audio = transport;
+                    callback({...params , socketId : socket.id});
+                } else{
+                    const { transport , params} = await createWebRTCTransport(rooms[meetId].router);
+                    rooms[meetId].consumerTransports[socket.id].video = transport;
+                    callback({...params , socketId : socket.id});
+                }
+                
             } catch (error) {
                 console.error("Error creating consumer transport:", error);
             }
@@ -155,7 +176,17 @@ export const setUpMediaSoupServer = (io: Server) => {
             try {
                 if (!meetId || !rooms[meetId].consumerTransports[data.socketId]|| !data.socketId) return;
 
-                await rooms[meetId].consumerTransports[data.socketId].connect({ dtlsParameters: data.dtlsParameters });
+                const kind = data.kind 
+                
+                if(!["audio" , "video"].includes(kind)){
+                    callback({erorr : "Invalid Kind"});
+                }
+
+                if(kind === "audio"){
+                    await rooms[meetId].consumerTransports[data.socketId].audio.connect({ dtlsParameters: data.dtlsParameters });
+                }else {
+                    await rooms[meetId].consumerTransports[data.socketId].video.connect({ dtlsParameters: data.dtlsParameters });
+                }
 
                 callback();
             } catch (error) {
@@ -164,69 +195,136 @@ export const setUpMediaSoupServer = (io: Server) => {
         });
 
         // Produce Media (Publisher)
+       // Produce Media (Publisher)
         socket.on("produce", async (data, callback) => {
             try {
-                
                 if (!meetId || !rooms[meetId].producerTransports[socket.id]) return;
 
                 const { kind, rtpParameters } = data;
-                const producer = await rooms[meetId].producerTransports[socket.id].produce({ kind, rtpParameters });
-                const socketId = socket.id; 
-                console.log("The producer type is ",producer.kind);
-                rooms[meetId].producers[producer.id] = producer;
 
-                callback({ id: producer.id , producerSocketId : socketId});
-                const producerId = producer.id; 
+                if (!["video", "audio"].includes(kind)) {
+                    callback({ error: "Invalid Kind" });
+                    return;
+                }
+
+                const producer = await rooms[meetId].producerTransports[socket.id].produce({
+                    kind,
+                    rtpParameters
+                });
+
+                const producerId = producer.id;
+
+                // Initialize if not already
+                rooms[meetId].producers[producerId] = {} as any;
+
+                // Store the producer based on kind
+                if (kind === "audio") {
+                    rooms[meetId].producers[producerId].audio = producer;
+                } else {
+                    rooms[meetId].producers[producerId].video = producer;
+                }
+
+                const socketId = socket.id;
+
+                callback({ id: producerId, producerSocketId: socketId , kind});
+
                 // Notify others in the room about the new producer
-                socket.broadcast.emit("newProducer", producerId);
+                socket.broadcast.emit("newProducer", {producerId , kind});
 
             } catch (error) {
                 console.error("Error producing media:", error);
+                callback({ error: "Internal server error" });
             }
         });
 
-        //get producers 
-        socket.on("getProducers" , async( data , callback)=> {
-            const {id} = data; 
-            if(!rooms[id]){
-                return callback({error : "Room not found"});
-            }
 
-            console.log(rooms[id].producers);
-
-            const producerIds = Object.values(rooms[id].producers).map((producer)=>producer.id);
-            console.log("producer Ids" , producerIds);
-
-            callback(producerIds);
-        })
+            //get producers 
+            // Get producers
+            socket.on("getProducers", async (data, callback) => {
+                const { id } = data;
+            
+                if (!rooms[id]) {
+                    return callback({ error: "Room not found" });
+                }
+            
+                const producerEntries = Object.values(rooms[id].producers);
+            
+                const producerInfo: { id: string; kind: "audio" | "video" }[] = [];
+            
+                for (const producerPair of producerEntries) {
+                    if (producerPair.audio) {
+                        producerInfo.push({ id: producerPair.audio.id, kind: "audio" });
+                    }
+                    if (producerPair.video) {
+                        producerInfo.push({ id: producerPair.video.id, kind: "video" });
+                    }
+                }
+            
+                console.log("Producer Info:", producerInfo);
+            
+                callback(producerInfo);
+            });
+            
 
         // Consume Media (Subscriber)
         socket.on("consume", async (data, callback) => {
             try {
+                console.log("The code is reaching the consumer consume part! ");
                 if (!meetId || !rooms[meetId].consumerTransports[socket.id]) return;
 
-                const { producerId, rtpCapabilities } = data;
-                const producer = rooms[meetId].producers[producerId];
+                const { producerId, rtpCapabilities , kind } = data;
+                let producer; 
 
+                if(!["video" , "audio"].includes(kind)){
+                    callback({error : "Invalid Kind "});
+                }
 
                 if (!rooms[meetId].router.canConsume({ producerId: producerId, rtpCapabilities })) {
                     return callback({ error: "Cannot consume" });
                 }
 
-                const consumer = await rooms[meetId].consumerTransports[socket.id].consume({
-                    producerId: producer.id,
-                    rtpCapabilities,
-                    paused: false,
-                });
+                if(kind === "audio"){
+                    producer = rooms[meetId].producers[producerId].audio;
+                    if(!producer){
+                        callback({error : "No Producer in the consume section found"})
+                        return ; 
+                    }
+                    const consumer = await rooms[meetId].consumerTransports[socket.id].audio.consume({
+                        producerId: producer?.id,
+                        rtpCapabilities,
+                        paused: false,
+                    });
+    
+                    rooms[meetId].consumers[consumer.id] = consumer ;
+    
+                    callback({
+                        id: consumer.id,
+                        producerId: producerId,
+                        kind: consumer.kind,
+                        rtpParameters: consumer.rtpParameters,
+                    });
+                } else {
+                    producer = rooms[meetId].producers[producerId].video;
+                    if(!producer){
+                        callback({error : "No Producer in the consume section found"});
+                        return; 
+                    }
+                    const consumer = await rooms[meetId].consumerTransports[socket.id].video.consume({
+                        producerId : producer?.id,
+                        rtpCapabilities, 
+                        paused : false,
+                    });
 
-                rooms[meetId].consumers[consumer.id] = consumer ;
+                    rooms[meetId].consumers[consumer.id] = consumer;
+                    callback({
+                        id : consumer.id , 
+                        producerId : producerId , 
+                        kind : consumer.kind ,
+                        rtpParameters : consumer.rtpParameters
+                    })
+                }
 
-                callback({
-                    id: consumer.id,
-                    producerId: producerId,
-                    kind: consumer.kind,
-                    rtpParameters: consumer.rtpParameters,
-                });
+
             } catch (error) {
                 console.error("Error consuming media:", error);
             }

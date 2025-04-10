@@ -1,5 +1,7 @@
 import { Request , Response } from "express";
 import prisma from "../utils/prisma";
+import { MessageType } from "@prisma/client";
+
 
 
 export const getMessagesByChatId = async(req : Request , res : Response) => {
@@ -98,6 +100,48 @@ export const getMessagesByChatId = async(req : Request , res : Response) => {
             error : error
         });
    }
+}
+
+
+export const saveMessage = async(req : Request , res:Response) => {
+  const { senderId , content , chatId , type, imageUrl } = req.body ; 
+  
+  if((!senderId || !content || !chatId || !type ) && !imageUrl){
+    console.log("Incomplete fucking details");
+    return; 
+  }
+  
+  if(!["IMAGE" , "TEXT"].includes(type)){
+    res.status(403).send({
+      message : "Incorrect message type sent"
+    });
+    return; 
+  }
+
+
+  try {
+    await prisma.message.create({
+      data : {
+        content : content , 
+        senderId , 
+        chatId ,
+        type : type as MessageType,
+        imageUrl : imageUrl
+      }
+    });
+
+    console.log("message saved successfully");
+    res.status(200).send({
+      message : "Message saved successfully"
+    })
+  } catch (error) {
+    console.log("Something went wrong whie saving the message" , error);
+    res.status(500).send({
+      message : "Something went wrong while saving message", 
+      error : error
+    });
+  }
+
 }
 
 

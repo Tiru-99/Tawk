@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 import { postObjectUrl, getObjectUrl } from "../utils/s3upload";
+import {v4 as uuid} from "uuid"; 
+
 
 export const uploadProfilePic = async (req: Request, res: Response) => {
     try {
@@ -10,7 +12,7 @@ export const uploadProfilePic = async (req: Request, res: Response) => {
 
         console.log("File Type : ", fileType);
 
-        let url = await postObjectUrl(`profile_pic_${id}`, fileType as string);
+        let url = await postObjectUrl('/profile_pic/',`profile_pic_${id}`, fileType as string);
 
         res.status(200).json({
             message: "Url fetched successfully",
@@ -24,6 +26,31 @@ export const uploadProfilePic = async (req: Request, res: Response) => {
         return;
     }
 
+}
+
+export const getPresignedUrl = async(req : Request , res : Response) => {
+    const fileType = req.query.fileType || "image/jpeg";
+
+    const parsedFileType = JSON.stringify(fileType);
+
+    const fileName = `${uuid()}.${parsedFileType.split("/")[1]}`;
+
+   try {
+
+     let url = await postObjectUrl('/chat_pics/',`${fileName}` , fileType as string);
+ 
+     res.status(200).send({
+         message : "Url fetched successfully",
+         url : url , 
+         key : "/chat_pics/"+fileName
+     });
+   } catch (error) {
+     console.log("Something went wrong while getting presigned url" , error);
+     res.status(500).send({
+        message : "Something went wrong while getting presigned url",
+        error : error 
+     })
+   }
 }
 
 
