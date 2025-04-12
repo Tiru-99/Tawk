@@ -7,6 +7,9 @@ import cors from 'cors'
 import { setupSocketIOServer } from './socket';
 import compression from 'compression';
 import { setUpMediaSoupServer } from './mediasoup';
+import { connectRedis } from './config/redis';
+import { startMessageConsumer } from './config/kafka';
+
 
 dotenv.config({
     path:'./.env'
@@ -45,6 +48,13 @@ app.use(
 
 const PORT = 5000 ; 
 
+//Connect redis on startup
+(async () => {
+  await connectRedis(); 
+})();
+
+//consume kafka streams
+startMessageConsumer(); 
 
 app.get('/' , (req, res)=>{
     res.send("hello world this is aayush tirmanwar");

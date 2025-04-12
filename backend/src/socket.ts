@@ -1,11 +1,15 @@
 import { Server } from "socket.io";
 import prisma from "./utils/prisma";
 import { v4 as uuidv4 } from 'uuid';
+import { pubClient , subClient } from "./config/redis";
+import { produceMessage } from "./config/kafka";
 
 interface SingleChatProps {
     senderId : string , 
     receiverId : string 
 }
+
+const subscribedChats = new Set<string>(); // to avoid duplicate subscriptions
 
 export const setupSocketIOServer = (io : Server) => {
     io.on("connection" , (socket) =>{
@@ -14,6 +18,16 @@ export const setupSocketIOServer = (io : Server) => {
         socket.on("join-chat" , (chatId : string)=> {
             socket.join(chatId);
             console.log("Chat joined successfully");
+
+            //subscribe only once per chat id 
+            if(!subscribedChats.has(chatId)){
+              subClient.subscribe(chatId , (message : string) => {
+                const parsed = JSON.parse(message);
+                io.to(chatId).emit("new-message" , parsed)
+              })
+              subscribedChats.add(chatId);
+              console.log("Subscribed to the redis channel" + chatId);
+            }
         });
 
         //socket controller to create a single chat 
@@ -132,7 +146,6 @@ export const setupSocketIOServer = (io : Server) => {
 
         socket.on("send-message", async (data) => {
           const { content, senderId, chatId , imageUrl} = data;
-          console.log("The code is reaching here in the socket part");
           // 1. Basic validation
           if ((!content || !senderId || !chatId) && !imageUrl) {
             return socket.emit("error", { message: "Invalid data" });
@@ -165,9 +178,15 @@ export const setupSocketIOServer = (io : Server) => {
             };
 
             console.log("the enriched message" , enrichedMessage);
+
+            //Publishing to redis 
+            pubClient.publish(chatId , JSON.stringify(enrichedMessage));
+
+            //send message to kafka consumer 
+            await produceMessage(JSON.stringify(enrichedMessage));
+            console.log("Message published to Redis" + chatId);
         
-            // 4. Emit enriched message to room
-            io.to(chatId).emit("new-message", enrichedMessage);
+            // io.to(chatId).emit("new-message", enrichedMessage);
           } catch (err) {
             console.error("Error in send-message:", err);
             socket.emit("error", { message: "Internal server error" });
