@@ -1,72 +1,71 @@
-'use client'
+"use client"
 
-import FilterTabs from "./FilterTabs";
-import { useState , useEffect , useMemo} from "react";
-import { PeopleSheet } from "./SearchSheet";
-import { CreateGroupDialog } from "./CreateGroupDialog";
-import { Avatar , AvatarFallback , AvatarImage } from "@radix-ui/react-avatar";
-import { io } from "socket.io-client";
+import type React from "react"
 
+import FilterTabs from "./FilterTabs"
+import { useState, useEffect, useMemo } from "react"
+import { PeopleSheet } from "./SearchSheet"
+import { CreateGroupDialog } from "./CreateGroupDialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
+import { io } from "socket.io-client"
+import { Menu } from "lucide-react"
 
 interface ChatsType {
-  id : string 
-  name : String | undefined 
-  isGroup : Boolean
-  latestMessage : String | undefined
-  createdAt : Date
-  users : UserDetailsType[]
+  id: string
+  name: string | undefined
+  isGroup: boolean
+  latestMessage: string | undefined
+  createdAt: Date
+  users: UserDetailsType[]
 }
 
 interface UserDetailsType {
-  userId : String , 
-  username : String ,
-  profile_pic : String , 
+  userId: string
+  username: string
+  profile_pic: string
 }
 
 type LeftBarProps = {
-  selectedChat : string  , 
-  setSelectedChat : React.Dispatch<React.SetStateAction<string>>;
+  selectedChat: string
+  setSelectedChat: React.Dispatch<React.SetStateAction<string>>
 }
 
-export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps) {
-
+export default function LeftBar({ selectedChat, setSelectedChat }: LeftBarProps) {
   const socket = useMemo(
     () =>
-      io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {  
+      io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {
         withCredentials: true,
       }),
-    []
-  );
-  console.log("localstorage id " , localStorage.userId);
-  const[chats , setChats] = useState<ChatsType[]>([]);
-  const[chat , setChat] = useState() ; 
-  const[otherUserDetails , setOtherUserDetails] = useState({
-    userId : "",
-    username :"",
-    profile_pic : ""
-  });
-  const[fetchAgain , setFetchAgain]= useState(false);
-  const[newChat , setNewChat] = useState<ChatsType>(); 
+    [],
+  )
+  console.log("localstorage id ", localStorage.userId)
+  const [chats, setChats] = useState<ChatsType[]>([])
+  const [chat, setChat] = useState()
+  const [otherUserDetails, setOtherUserDetails] = useState({
+    userId: "",
+    username: "",
+    profile_pic: "",
+  })
+  const [fetchAgain, setFetchAgain] = useState(false)
+  const [newChat, setNewChat] = useState<ChatsType>()
 
-  useEffect(()=>{
-    
-    const loggedInUser = localStorage.userId; 
-    socket.emit("get-chats" , loggedInUser);
-    console.log(loggedInUser);
+  useEffect(() => {
+    const loggedInUser = localStorage.userId
+    socket.emit("get-chats", loggedInUser)
+    console.log(loggedInUser)
 
-    socket.on("get-all-chats" , (chats : ChatsType[] ) => {
-      setChats(chats);
+    socket.on("get-all-chats", (chats: ChatsType[]) => {
+      setChats(chats)
     })
 
-    socket.on("new-chat-added" , (newChat) => {
-      setChat(newChat);
-      console.log("SearchSheet component me chat aagya" , newChat)
+    socket.on("new-chat-added", (newChat) => {
+      setChat(newChat)
+      console.log("SearchSheet component me chat aagya", newChat)
     })
 
-    return ()=> {
-      socket.off("new-chat-added"); 
+    return () => {
+      socket.off("new-chat-added")
     }
-
 
     // axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/getChats/${loggedInUser}`)
     // .then((res) => {
@@ -75,145 +74,155 @@ export default function LeftBar({selectedChat , setSelectedChat } : LeftBarProps
     // .catch((error)=>{
     //   console.log("Something went wrong" , error );
     // })
-  } , [socket , fetchAgain])
+  }, [socket, fetchAgain])
 
-
-  useEffect(()=>{
-    if(newChat){
-      const newChatWithOtherUserName = {...newChat , name : getOtherUserName(newChat)}
-      setChats((prevState)=> [...prevState , newChatWithOtherUserName]);
+  useEffect(() => {
+    if (newChat) {
+      const newChatWithOtherUserName = { ...newChat, name: getOtherUserName(newChat) }
+      setChats((prevState) => [...prevState, newChatWithOtherUserName])
     }
-  },[newChat]);
+  }, [newChat])
 
-  //function to pass new chat from child to parent 
-  const handleNewChat = (newChat : ChatsType) => {
-    setNewChat(newChat);
-    console.log("new chat :", newChat);
+  //function to pass new chat from child to parent
+  const handleNewChat = (newChat: ChatsType) => {
+    setNewChat(newChat)
+    console.log("new chat :", newChat)
   }
 
-  console.log("Chats" , chats);
+  console.log("Chats", chats)
 
   //utility function to get the name of the other single chat
-  const getOtherUserName = (chat : ChatsType) => {
-   if(chat.isGroup || chat.name != null ) return chat.name ; 
+  const getOtherUserName = (chat: ChatsType) => {
+    if (chat.isGroup || chat.name != null) return chat.name
 
-   const userId = localStorage.userId ;
-  
-   const filteredChat = chat.users.filter((user)=>user.userId !== userId);
-   console.log("This is the filteredChat" , filteredChat);
-   return filteredChat[0]?.username;
+    const userId = localStorage.userId
+
+    const filteredChat = chat.users.filter((user) => user.userId !== userId)
+    console.log("This is the filteredChat", filteredChat)
+    return filteredChat[0]?.username
   }
 
-  const getOtherProfilePic = (chat : ChatsType) => {
-    if(chat.isGroup || chat.name != null ) return chat.name ; 
+  const getOtherProfilePic = (chat: ChatsType) => {
+    if (chat.isGroup || chat.name != null) return chat.name
 
-    const userId = localStorage.userId ;
-   
-    const filteredChat = chat.users.filter((user)=>user.userId !== userId);
-    console.log("This is the filteredChat" , filteredChat);
-    return filteredChat[0]?.profile_pic;
+    const userId = localStorage.userId
+
+    const filteredChat = chat.users.filter((user) => user.userId !== userId)
+    console.log("This is the filteredChat", filteredChat)
+    return filteredChat[0]?.profile_pic
   }
 
+  const convertTimeToReadableFormat = (time: Date) => {
+    // Create a Date object from the ISO string
+    const date = new Date(time)
 
-  const convertTimeToReadableFormat = (time : Date) =>{
-     // Create a Date object from the ISO string
-      const date = new Date(time);
+    // Extract hours and minutes
+    let hours = date.getHours()
+    const minutes = date.getMinutes()
 
-      // Extract hours and minutes
-      let hours = date.getHours();
-      const minutes = date.getMinutes();
+    // Determine AM or PM
+    const ampm = hours >= 12 ? "PM" : "AM"
 
-      // Determine AM or PM
-      const ampm = hours >= 12 ? "PM" : "AM";
+    // Convert to 12-hour format
+    hours = hours % 12
+    hours = hours || 12 // Handle midnight (0 hours)
 
-      // Convert to 12-hour format
-      hours = hours % 12;
-      hours = hours || 12; // Handle midnight (0 hours)
+    // Format minutes to always be two digits
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes
 
-      // Format minutes to always be two digits
-      const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-
-      // Combine into the final readable time string
-      return `${hours}:${formattedMinutes} ${ampm}`;
+    // Combine into the final readable time string
+    return `${hours}:${formattedMinutes} ${ampm}`
   }
-  console.log("image" , localStorage.profile_pic);
+  console.log("image", localStorage.profile_pic)
 
   return (
     <>
-      <div className="p-4 border-gray-300 rounded-md border-[1px] w-full bg-white h-screen">
+      <div className="p-5 w-full bg-white h-screen overflow-hidden flex flex-col">
         {/* Profile Section */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             {/* Avatar */}
-            <Avatar className="relative h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
+            <Avatar className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm">
               <AvatarImage
                 src={localStorage.getItem("profile_pic") || ""}
                 alt="User Profile"
                 className="h-full w-full object-cover"
               />
-              <AvatarFallback className="absolute inset-0 flex items-center justify-center text-center font-semibold text-gray-600 bg-gray-300">
+              <AvatarFallback className="absolute inset-0 flex items-center justify-center text-center font-semibold text-white bg-gradient-to-br from-blue-500 to-indigo-600">
                 {localStorage.getItem("username")?.slice(0, 2).toUpperCase() || "AB"}
               </AvatarFallback>
             </Avatar>
 
-
-
             {/* User Info */}
             <div className="flex flex-col justify-center">
-              <h2 className="text-md tracking-tight">{localStorage.username}</h2>
-              <p className="text-xs text-gray-500">Info Account</p>
+              <h2 className="text-md font-semibold tracking-tight">{localStorage.username}</h2>
+              <p className="text-xs text-gray-500">Online</p>
             </div>
           </div>
 
           {/* Search Icon */}
           <div className="flex items-center gap-3">
-           <PeopleSheet socket = {socket} sendChatToParent = {handleNewChat}></PeopleSheet>
-           <CreateGroupDialog setFetchAgain = {setFetchAgain}></CreateGroupDialog> 
+            <PeopleSheet socket={socket} sendChatToParent={()=>handleNewChat}></PeopleSheet>
+            <CreateGroupDialog setFetchAgain={setFetchAgain}></CreateGroupDialog>
           </div>
         </div>
 
-        
-            <FilterTabs></FilterTabs>
-       
+        <div className="mb-4">
+          <FilterTabs></FilterTabs>
+        </div>
 
         {/* Chats and Latest Message Section */}
-        <div className="mt-4">
-            <p className="text-gray-500 font-light mb-3 ">Messages</p>
-            {chats.map(( chat , index)=>(
-                <div 
-                 key={index}
-                 className={`flex justify-between items-center mb-6 cursor-pointer ${selectedChat === chat.id  ? "bg-blue-100" : "hover:bg-gray-100"} `}
-                 onClick={()=> setSelectedChat(chat.id)}>
+        <div className="mt-2 flex-1 overflow-y-auto pr-1">
+          <p className="text-xs font-medium uppercase text-gray-500 mb-3 tracking-wider">Messages</p>
+          <div className="space-y-2">
+            {chats.map((chat, index) => (
+              <div
+                key={index}
+                className={`flex justify-between items-center p-3 rounded-xl transition-all duration-200 cursor-pointer ${
+                  selectedChat === chat.id
+                    ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-sm"
+                    : "hover:bg-gray-50"
+                }`}
+                onClick={() => setSelectedChat(chat.id)}
+              >
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
-                   <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200">
-                      {getOtherProfilePic(chat) ? (
-                        <img
-                          className="w-full h-full object-cover rounded-full"
-                          src={`${getOtherProfilePic(chat)}`}
-                          alt="Profile"
-                        />
-                      ) : (
-                        <div className="text-center font-semibold">BC</div>
-                      )}
-                   </div> 
+                  <div className="w-12 h-12 flex items-center justify-center rounded-full overflow-hidden border border-gray-200 shadow-sm">
+                    {getOtherProfilePic(chat) ? (
+                      <img className="w-full h-full object-cover" src={`${getOtherProfilePic(chat)}`} alt="Profile" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-semibold">
+                        {getOtherUserName(chat)?.toString().slice(0, 2).toUpperCase() || "BC"}
+                      </div>
+                    )}
+                  </div>
 
-    
                   {/* Chat Info */}
                   <div className="flex flex-col">
-                    <h2 className="text-sm tracking-tight">{getOtherUserName(chat)}</h2>
-                    <p className="text-xs text-gray-500">{
-                     chat.latestMessage && chat.latestMessage.length > 25 ? 
-                    (chat.latestMessage?.slice(0 , 25) + '...') : (chat.latestMessage)}</p>
+                    <h2 className="text-sm font-medium tracking-tight">{getOtherUserName(chat)}</h2>
+                    <p className="text-xs text-gray-500 line-clamp-1">
+                      {chat.latestMessage && chat.latestMessage.length > 25
+                        ? chat.latestMessage?.slice(0, 25) + "..."
+                        : chat.latestMessage}
+                    </p>
                   </div>
                 </div>
-    
+
                 {/* Time */}
-                <p className="text-xs text-gray-400">{convertTimeToReadableFormat(chat.createdAt)}</p>
+                <div className="flex flex-col items-end">
+                  <p className="text-xs font-medium text-gray-500">{convertTimeToReadableFormat(chat.createdAt)}</p>
+                  {/* You can add an unread message indicator here */}
+                  {index % 3 === 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full mt-1">
+                      {Math.floor(Math.random() * 5) + 1}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
+          </div>
         </div>
       </div>
     </>
-  );
+  )
 }

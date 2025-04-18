@@ -45,7 +45,6 @@ export default function Home() {
   const [consumers, setConsumers] = useState<{ id: string; stream: MediaStream ; kind : string}[]>([]);
   const [producers, setProducers] = useState<ProducerInfo[]>([]);
   const [userProducer, setUserProducer] = useState<string[]>([]);
-  const [incomingparams, setIncomingParams] = useState<TransportParams>()
   const [fetchProducers, setFetchProducers] = useState<number>(0);
   const [triggerConsumeMedia, setTriggerConsumeMedia] = useState<number>(0);
   const consumerTransportRef = useRef<Transport | null>(null);
@@ -67,6 +66,8 @@ export default function Home() {
     socket.emit("getProducers", { id }, (producerInfo: ProducerInfo[]) => {
       console.log("Producer IDs received", producerInfo);
       setProducers(producerInfo); // Asynchronously updates state
+      //consumeMedia function here 
+      consumeMedia(producerInfo);
     });
   }, [fetchProducers]);
 
@@ -263,7 +264,7 @@ useEffect(() => {
             rtpParameters: data.rtpParameters,
           });
 
-          socket.emit("resume-consuming", { consumerId: data.id });
+          socket.emit("consumer-resume", { consumerId: data.id });
 
           console.log("Consumer created successfully:", consumer);
 
@@ -285,90 +286,84 @@ useEffect(() => {
   }
 
 
-  const consumeMedia = async (producerInfo : ProducerInfo[]) => {
+  const consumeMedia = async (producerInfo: ProducerInfo[]) => {
+    if (!producerInfo || !Array.isArray(producerInfo) || producerInfo.length === 0) {
+      console.warn("⚠️ No producers available to consume.");
+      return;
+    }
+    //to filter your own producerId
+    const filteredProducers = producerInfo.filter(
+      (producer) => !userProducer.includes(producer.id)
+    );
 
-    
-    socket.emit("createConsumerTransport", {}, async (params: any) => {
-      if (!params || !deviceRef.current) return;
-
-      console.log("The params are", params);
-
-      const consumerTransport = deviceRef.current.createRecvTransport(params)
-      console.log("Consumer Transport methods:", consumerTransport.connectionState);
-      consumerTransportRef.current = consumerTransport;
-      setIncomingParams(params);
-
-      setFetchProducers((prev) => prev + 1);
-
-      const { socketId } = params;
-      console.log("📢 Registering consumer transport event listeners...");
-      consumerTransport.on("connect", async ({ dtlsParameters }, callback, errback) => {
-        try {
-          socket.emit("connectConsumerTransport", { dtlsParameters, socketId }, () => {
-            console.log("Consumer transport connected successfully!");
-          });
-          callback();
-          console.log("Consumer created successfully");
-          // consumeAllProducers(params);
-        } catch (error) {
-          console.error("Error connecting consumer transport", error);
-        }
-      });
-
-
-      console.log("The number of producers are", producers);
-
-
-      if (!producers || !Array.isArray(producers) || producers.length === 0) {
-        console.warn("⚠️ No producers available to consume.");
-        return;
-      }
-
-      producers?.map((producerId) => {
+    if (filteredProducers.length === 0) {
+      console.log("No external producers to consume.");
+      return;
+    }
+  
+    for (const producer of filteredProducers) {
+      const { id: producerId, kind } = producer;
+  
+      socket.emit("createConsumerTransport", { kind }, async (params: any) => {
+        if (!params || !deviceRef.current) return;
+  
+        console.log("The params are", params);
+  
+        const consumerTransport = deviceRef.current.createRecvTransport(params);
+        console.log("Consumer Transport created:", consumerTransport.id);
+  
+        const { socketId } = params;
+  
+        consumerTransport.on("connect", async ({ dtlsParameters }, callback, errback) => {
+          try {
+            socket.emit("connectConsumerTransport", { dtlsParameters, socketId, kind }, () => {
+              console.log("✅ Consumer transport connected!");
+            });
+            callback();
+          } catch (error) {
+            console.error("❌ Error connecting consumer transport", error);
+          }
+        });
+  
         socket.emit(
           "consume",
           {
-            producerId, // The socket ID of the producer whose media we want to consume
-            rtpCapabilities: deviceRef.current?.rtpCapabilities, // The Mediasoup device's RTP capabilities
+            producerId,
+            rtpCapabilities: deviceRef.current?.rtpCapabilities,
+            kind,
           },
           async (data: any) => {
-            console.log("The code is reacheing here in the cosumer section")
-            console.log("The data from the backend is", data);
             if (data.error) {
               console.error("Error consuming:", data.error);
               return;
             }
-
+  
             const consumer = await consumerTransport.consume({
               id: data.id,
               producerId: data.producerId,
               kind: data.kind,
               rtpParameters: data.rtpParameters,
             });
-
-            socket.emit("resume-consuming", { consumerId: data.id });
-
-            console.log("Consumer created successfully:", consumer);
-
-
-            // Create a new media stream and store it
-            // Create a new media stream and store it
+  
+            socket.emit("consumer-resume", { consumerId: data.id });
+  
+            console.log("🎥 Consumer created successfully:", consumer);
+  
             try {
               const newStream = new MediaStream([consumer.track]);
-              setConsumers((prevConsumers) => [
-                ...prevConsumers,
-                { id: consumer.id, stream: newStream ,kind : consumer.kind},
+              setConsumers((prev) => [
+                ...prev,
+                { id: consumer.id, stream: newStream, kind: consumer.kind },
               ]);
-            } catch (error) {
-              console.error("Error creating MediaStream:", error);
+            } catch (err) {
+              console.error("Error creating MediaStream:", err);
             }
           }
         );
-      })
-
-
-    });
-  }
+      });
+    }
+  };
+  
 
   const handleStartCamera = async () => {
     if (!localVideoRef.current) return null;

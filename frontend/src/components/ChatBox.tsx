@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useEffect, useState, useMemo, useRef } from "react"
-import { Phone, Video, MoreVertical, Check, Smile, Send, Paperclip, Clock } from "lucide-react"
+import { Phone, Video, MoreVertical, Check, Smile, Send, Paperclip, Clock , Menu} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import axios from "axios"
@@ -233,6 +233,11 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
           {/* Header */}
           <header className="flex items-center justify-between border-b px-6 py-4 bg-white shadow-sm">
             <div className="flex items-center gap-4">
+            <span className="block md:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </span>
               <div className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm">
                 <Image
                   src={
@@ -252,13 +257,6 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
                 <h1 className="font-semibold text-lg cursor-pointer hover:text-gray-700 transition-colors">
                   {chatDetails?.name}
                 </h1>
-                <p className="text-sm text-green-500 flex items-center gap-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                  </span>
-                  Tiru is typing...
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -386,7 +384,7 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
           )}
 
           {/* Chat Input box area */}
-          <div className="sticky bottom-0 left-0 w-full border-t bg-white px-6 py-4 shadow-md">
+          <div className="w-full border-t bg-white px-6 py-4 shadow-md">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -451,6 +449,11 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
                 />
               </svg>
             </div>
+            <span>
+              <Button className="cursor-pointer">
+                Select A Chat
+              </Button>
+            </span>
             <h2 className="text-xl font-semibold text-gray-700 mb-2">No conversation selected</h2>
             <p className="text-gray-500">Please select a chat from the sidebar to start messaging</p>
           </div>

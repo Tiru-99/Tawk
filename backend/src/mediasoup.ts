@@ -312,7 +312,7 @@ export const setUpMediaSoupServer = (io: Server) => {
                     const consumer = await rooms[meetId].consumerTransports[socket.id].video.consume({
                         producerId : producer?.id,
                         rtpCapabilities, 
-                        paused : false,
+                        paused : true,
                     });
 
                     rooms[meetId].consumers[consumer.id] = consumer;
