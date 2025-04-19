@@ -7,8 +7,8 @@ export const createMediasoupWorker = async() => {
     //create a mediasoup worker 
     try {
       const newWorker = await mediasoup.createWorker({
-          rtcMinPort : 2000, 
-          rtcMaxPort : 2020
+          rtcMinPort : 10000, 
+          rtcMaxPort : 20000
       });
 
       console.log("Worker process id" , newWorker.pid)
