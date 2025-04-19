@@ -65,27 +65,36 @@ export default function Home() {
   
 
 
-  useEffect(() => {
-    socket.on("newProducer", ({producerId , kind}) => {
-      console.log("the producer kind is " ,kind);
-      console.log("new producer joined and event triggered", producerId);
-      consumeMediaForSingleProducer(producerId , kind);
-    });
+    useEffect(() => {
+      const handleNewProducer = async ({ producerId, kind }: { producerId: string; kind: string }) => {
+        await waitForDeviceReady(); // ⏳ wait until device is ready
+        console.log("the producer kind is", kind);
+        console.log("new producer joined and event triggered", producerId);
+        consumeMediaForSingleProducer(producerId, kind);
+      };
+    
+      socket.on("newProducer", handleNewProducer);
+    
+      return () => {
+        socket.off("newProducer", handleNewProducer);
+      };
+    }, []);
+    
 
-    return () => {
-      socket.off("newProducer");
-    }
-  }, []);
-
   useEffect(() => {
-    socket.emit("getProducers", { id }, (producerInfo: ProducerInfo[]) => {
-      console.log("Producer IDs received", producerInfo);
-      setProducers(producerInfo); // Asynchronously updates state
-      //consumeMedia function here 
-      consumeMedia(producerInfo);
-    });
+    const fetchAndConsumeProducers = async () => {
+      await waitForDeviceReady(); // ⏳ wait until device is ready
+  
+      socket.emit("getProducers", { id }, (producerInfo: ProducerInfo[]) => {
+        console.log("Producer IDs received", producerInfo);
+        setProducers(producerInfo);
+        consumeMedia(producerInfo); // ✅ consume only after device is ready
+      });
+    };
+  
+    fetchAndConsumeProducers();
   }, [fetchProducers]);
-
+  
 // Dynamically assign streams to video elements
 
 
