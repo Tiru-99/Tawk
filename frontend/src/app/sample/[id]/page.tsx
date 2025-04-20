@@ -380,6 +380,23 @@ export default function Home() {
           ))}
       </div>
 
+      <div>
+      {consumers
+        .filter(({ kind }) => kind === "audio")
+        .map(({ id, stream }) => (
+          <audio
+            key={id}
+            ref={(el) => {
+              if (el && stream) {
+                el.srcObject = stream;
+                el.autoplay = true;
+                el.play().catch(err => console.error("Error playing audio:", err));
+              }
+            }}
+          />
+        ))}
+      </div>
+
     </div>
   );
 
