@@ -31,7 +31,7 @@ export const config = {
             listenIps: [
                 {
                   ip: '0.0.0.0',
-                  announcedIp: "172.16.149.127",
+                  announcedIp: "172.16.148.212",
                 }
               ] as ListenIpsProps[],
               maxIncomingBitrate: 1500000,

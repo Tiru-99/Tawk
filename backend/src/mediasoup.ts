@@ -8,7 +8,7 @@ import { Router , Transport } from "mediasoup/node/lib/types";
 interface Room {
     router: Router;
     producerTransports: { [socketId: string]: Transport };
-    consumerTransports: { [socketId: string]: {audio : Transport  , video : Transport} };
+    consumerTransports: { [socketId: string]: Transport };
     producers: { [id: string]: {audio : Producer | null , video : Producer | null}};
     consumers : {[id : string] : Consumer}
 }
@@ -125,34 +125,20 @@ export const setUpMediaSoupServer = (io: Server) => {
                 if (!meetId) return callback({ error: "Not in a meeting" });
                 console.log("Room is " , rooms);
 
-                const { kind } = data; 
-
-                if(!["video" , "audio"].includes(kind)){
-                    callback({error : "Invalid Kind"});
-                    return; 
-                }
-
                 console.log("here the router is " , rooms[meetId].router);
 
                 if (!rooms[meetId].consumerTransports[socket.id]) {
                     rooms[meetId].consumerTransports[socket.id] = {} as any;
                 }
-
                 // Initialize the consumerTransports[socket.id] object if not already
                 // possible chances of errors here 
                 // if (!rooms[meetId].consumerTransports[socket.id]) {
                 //     rooms[meetId].consumerTransports[socket.id] = { audio: null, video: null };
                 // }
 
-                if(kind === "audio"){
-                    const { transport, params } = await createWebRTCTransport(rooms[meetId].router);
-                    rooms[meetId].consumerTransports[socket.id].audio = transport;
-                    callback({...params , socketId : socket.id});
-                } else{
-                    const { transport , params} = await createWebRTCTransport(rooms[meetId].router);
-                    rooms[meetId].consumerTransports[socket.id].video = transport;
-                    callback({...params , socketId : socket.id});
-                }
+                const {transport , params} = await createWebRTCTransport(rooms[meetId].router) ; 
+                rooms[meetId].consumerTransports[socket.id] = transport; 
+                callback({...params , socketId : socket.id});
                 
             } catch (error) {
                 console.error("Error creating consumer transport:", error);
@@ -176,17 +162,7 @@ export const setUpMediaSoupServer = (io: Server) => {
             try {
                 if (!meetId || !rooms[meetId].consumerTransports[data.socketId]|| !data.socketId) return;
 
-                const kind = data.kind 
-                
-                if(!["audio" , "video"].includes(kind)){
-                    callback({erorr : "Invalid Kind"});
-                }
-
-                if(kind === "audio"){
-                    await rooms[meetId].consumerTransports[data.socketId].audio.connect({ dtlsParameters: data.dtlsParameters });
-                }else {
-                    await rooms[meetId].consumerTransports[data.socketId].video.connect({ dtlsParameters: data.dtlsParameters });
-                }
+                await rooms[meetId].consumerTransports[data.socketId].connect({dtlsParameters : data.dtlsParameters}); 
 
                 callback();
             } catch (error) {
@@ -272,16 +248,16 @@ export const setUpMediaSoupServer = (io: Server) => {
                 console.log("The code is reaching the consumer consume part! ");
                 if (!meetId || !rooms[meetId].consumerTransports[socket.id]) return;
 
-                const { producerId, rtpCapabilities , kind } = data;
+                const { producerId, rtpCapabilities , kind} = data;
                 let producer; 
 
-                if(!["video" , "audio"].includes(kind)){
-                    callback({error : "Invalid Kind "});
-                }
 
                 if (!rooms[meetId].router.canConsume({ producerId: producerId, rtpCapabilities })) {
                     return callback({ error: "Cannot consume" });
                 }
+
+                producer = rooms[meetId].producers[producerId].audio; 
+
 
                 if(kind === "audio"){
                     producer = rooms[meetId].producers[producerId].audio;
@@ -289,7 +265,7 @@ export const setUpMediaSoupServer = (io: Server) => {
                         callback({error : "No Producer in the consume section found"})
                         return ; 
                     }
-                    const consumer = await rooms[meetId].consumerTransports[socket.id].audio.consume({
+                    const consumer = await rooms[meetId].consumerTransports[socket.id].consume({
                         producerId: producer?.id,
                         rtpCapabilities,
                         paused: false,
@@ -309,7 +285,7 @@ export const setUpMediaSoupServer = (io: Server) => {
                         callback({error : "No Producer in the consume section found"});
                         return; 
                     }
-                    const consumer = await rooms[meetId].consumerTransports[socket.id].video.consume({
+                    const consumer = await rooms[meetId].consumerTransports[socket.id].consume({
                         producerId : producer?.id,
                         rtpCapabilities, 
                         paused : true,

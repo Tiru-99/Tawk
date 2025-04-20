@@ -4,9 +4,8 @@ import { Device } from "mediasoup-client";
 import { Transport } from "mediasoup-client/lib/types";
 import { RtpCapabilities } from "mediasoup-client/lib/RtpParameters";
 import { io } from 'socket.io-client';
-import { useEffect, useState, useMemo, useRef} from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams } from "next/navigation";
-import { defaultOverrides } from "next/dist/server/require-hook";
 
 
 type ProducerResponse = {
@@ -14,17 +13,11 @@ type ProducerResponse = {
   producerSocketId: string;
 };
 
-interface ProducerInfo  {
-  id : string , 
-  kind : string
+interface ProducerInfo {
+  id: string,
+  kind: string
 }
 
-interface TransportParams {
-  id: string;
-  iceParameters: any; // Replace 'any' with the actual type if available
-  iceCandidates: any[]; // Replace 'any' with the actual type if available
-  dtlsParameters: any; // Replace 'any' with the actual type if available
-}
 
 
 export default function Home() {
@@ -39,12 +32,12 @@ export default function Home() {
 
   const { id } = useParams();
   const deviceRef = useRef<Device | null>(null);
-  const deviceReady = useRef<Device |null>(null);
+  const deviceReady = useRef<Device | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
   const [rtpCapabilities, setRtpCapabilities] = useState<RtpCapabilities>();
-  const [consumers, setConsumers] = useState<{ id: string; stream: MediaStream ; kind : string ; producerId : string }[]>([]);
+  const [consumers, setConsumers] = useState<{ id: string; stream: MediaStream; kind: string; producerId: string }[]>([]);
   const [producers, setProducers] = useState<ProducerInfo[]>([]);
   const [userProducer, setUserProducer] = useState<string[]>([]);
   const [fetchProducers, setFetchProducers] = useState<number>(0);
@@ -62,28 +55,34 @@ export default function Home() {
       };
       check();
     });
-  
 
 
-    useEffect(() => {
-      const handleNewProducer = async ({ producerId, kind }: { producerId: string; kind: string }) => {
-        await waitForDeviceReady(); // ⏳ wait until device is ready
-        console.log("the producer kind is", kind);
-        console.log("new producer joined and event triggered", producerId);
-        consumeMediaForSingleProducer(producerId, kind);
-      };
-    
-      socket.on("newProducer", handleNewProducer);
-    
-      return () => {
-        socket.off("newProducer", handleNewProducer);
-      };
-    }, []);
-    
+
+  useEffect(() => {
+    const handleNewProducer = async ({ producerId, kind }: { producerId: string; kind: string }) => {
+      await waitForDeviceReady(); // ⏳ wait until device is ready
+      console.log("the producer kind is", kind);
+      console.log("new producer joined and event triggered", producerId);
+      consumeMediaForSingleProducer(producerId, kind);
+    };
+
+    socket.on("newProducer", handleNewProducer);
+
+    return () => {
+      socket.off("newProducer", handleNewProducer);
+    };
+  }, []);
+
 
   useEffect(() => {
     const fetchAndConsumeProducers = async () => {
       await waitForDeviceReady(); // ⏳ wait until device is ready
+  
+      // IIFE to immediately invoke createConsumer calls
+      (() => {
+        createConsumer("video");
+        createConsumer("audio");
+      })();
   
       socket.emit("getProducers", { id }, (producerInfo: ProducerInfo[]) => {
         console.log("Producer IDs received", producerInfo);
@@ -95,7 +94,8 @@ export default function Home() {
     fetchAndConsumeProducers();
   }, [fetchProducers]);
   
-// Dynamically assign streams to video elements
+
+  // Dynamically assign streams to video elements
 
 
 
@@ -217,27 +217,19 @@ export default function Home() {
     }
   }
 
-
-  const consumeMediaForSingleProducer = async (producerId: string ,kind : string) => {
-
-    if (!producerId) {
-      console.log("No incoming producer to consume.");
-      return;
-    }
-  
-    const alreadyExists = userProducer.includes(producerId) || consumers.some((c) => c.producerId === producerId);
-    if (alreadyExists) {
-      console.log("Already consuming this producer:", producerId);
+  const createConsumer = async (kind: string) => {
+    if (!kind) {
+      console.log("Incoming kind not found");
       return;
     }
 
-    socket.emit("createConsumerTransport", {kind}, async (params: any) => {
+    socket.emit("createConsumerTransport", { kind }, async (params: any) => {
       if (!params || !deviceRef.current) return;
 
-      console.log("device state" , deviceRef.current?.loaded);
+      console.log("device state", deviceRef.current?.loaded);
 
       console.log("The params are", params);
-      console.log("The deviceRef current is" , deviceRef.current);
+      console.log("The deviceRef current is", deviceRef.current);
 
       const consumerTransport = deviceRef.current.createRecvTransport(params)
       console.log("Consumer Transport methods:", consumerTransport.connectionState);
@@ -247,7 +239,7 @@ export default function Home() {
       console.log("📢 Registering consumer transport event listeners...");
       consumerTransport.on("connect", async ({ dtlsParameters }, callback, errback) => {
         try {
-          socket.emit("connectConsumerTransport", { dtlsParameters, socketId , kind}, () => {
+          socket.emit("connectConsumerTransport", { dtlsParameters, socketId, kind }, () => {
             console.log("Consumer transport connected successfully!");
           });
           callback();
@@ -257,24 +249,45 @@ export default function Home() {
           console.error("Error connecting consumer transport", error);
         }
       });
+    })
+
+  }
+
+  const consumeMediaForSingleProducer = async (producerId: string, kind: string) => {
+
+    if (!producerId) {
+      console.log("No incoming producer to consume.");
+      return;
+    }
+
+    const alreadyExists = userProducer.includes(producerId) || consumers.some((c) => c.producerId === producerId);
+    if (alreadyExists) {
+      console.log("Already consuming this producer:", producerId);
+      return;
+    }
 
 
-      socket.emit(
-        "consume",
-        {
-          producerId, // The socket ID of the producer whose media we want to consume
-          rtpCapabilities: deviceRef.current?.rtpCapabilities,
-          kind // The Mediasoup device's RTP capabilities
-        },
-        async (data: any) => {
-          console.log("The code is reacheing here in the cosumer section")
-          console.log("The data from the backend is", data);
-          if (data.error) {
-            console.error("Error consuming:", data.error);
+    socket.emit(
+      "consume",
+      {
+        producerId, // The socket ID of the producer whose media we want to consume
+        rtpCapabilities: deviceRef.current?.rtpCapabilities,
+        kind // The Mediasoup device's RTP capabilities
+      },
+      async (data: any) => {
+        console.log("The code is reacheing here in the cosumer section")
+        console.log("The data from the backend is", data);
+        if (data.error) {
+          console.error("Error consuming:", data.error);
+          return;
+        }
+        try {
+          if (!consumerTransportRef.current) {
+            console.log("Consumer Transport Ref not found !");
             return;
           }
 
-          const consumer = await consumerTransport.consume({
+          const consumer = await consumerTransportRef.current.consume({
             id: data.id,
             producerId: data.producerId,
             kind: data.kind,
@@ -287,19 +300,17 @@ export default function Home() {
 
           // Create a new media stream and store it
           // Create a new media stream and store it
-          try {
-            const newStream = new MediaStream([consumer.track]);
-            setConsumers((prevConsumers) => [
-              ...prevConsumers,
-              { id: consumer.id, stream: newStream ,kind : consumer.kind , producerId : data.producerId },
-            ]);
-          } catch (error) {
-            console.error("Error creating MediaStream:", error);
-          }
+          const newStream = new MediaStream([consumer.track]);
+          setConsumers((prevConsumers) => [
+            ...prevConsumers,
+            { id: consumer.id, stream: newStream, kind: consumer.kind, producerId: data.producerId },
+          ]);
+        } catch (error) {
+          console.error("Error creating MediaStream:", error);
         }
-      );
+      }
+    );
 
-    });
   }
 
 
@@ -308,25 +319,25 @@ export default function Home() {
       console.warn("⚠️ No producers available to consume.");
       return;
     }
-  
+
     console.log("Available producers to consume:", producerInfo);
-  
+
     // Filter out own producers
     const filteredProducers = producerInfo.filter(
       (producer) => !userProducer.includes(producer.id)
     );
-  
+
     if (filteredProducers.length === 0) {
       console.log("No external producers to consume.");
       return;
     }
-  
+
 
     for (const { id: producerId, kind } of filteredProducers) {
       await consumeMediaForSingleProducer(producerId, kind);
     }
   };
-  
+
 
   const handleStartCamera = async () => {
     if (!localVideoRef.current) return null;
