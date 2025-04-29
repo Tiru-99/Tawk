@@ -31,7 +31,7 @@ A powerful, scalable chat application with real-time messaging, media sharing, a
 
 ---
 
-## 📁 Project Structure
+## 📁 Project Setup
 
 ```
 # Clone the repository
