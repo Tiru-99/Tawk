@@ -5,14 +5,25 @@ import { Consumer, Producer } from "mediasoup/node/lib/types";
 import { createWebRTCTransport } from "./utils/helpers";
 import { Router , Transport } from "mediasoup/node/lib/types";
 
-interface Room {
-    router: Router;
-    producerTransports: { [socketId: string]: Transport };
-    consumerTransports: { [socketId: string]: Transport };
-    producers: { [id: string]: {audio : Producer | null , video : Producer | null}};
-    consumers : {[id : string] : Consumer}
-}
+// interface Room {
+//     router: Router;
+//     producerTransports: { [socketId: string]: Transport };
+//     consumerTransports: { [socketId: string]: Transport };
+//     producers: { [id: string]: {audio : Producer | null , video : Producer | null}};
+//     consumers : {[id : string] : Consumer}
+// }
 
+interface Room {
+    router : Router ; 
+    users : {
+        [userId : string]:{
+            producerTransports : {[ socketId : string ] : Transport} ;
+            consumerTransports : {[socketId : string] : Transport} ;
+            producers : {[id : string] : {audio : Producer | null , video : Producer | null}};
+            consumers : {[id : string] : Consumer}
+        }
+    }
+}
 
 let rooms: { [meetId: string]: Room } = {}; 
 
@@ -20,9 +31,12 @@ let rooms: { [meetId: string]: Room } = {};
 export const setUpMediaSoupServer = (io: Server) => {
     io.on("connection", async (socket: Socket) => {
         let meetId: string | null = null; 
+        let roomUserId : string ; 
 
-        socket.on("join-meet", async (id: string , callback) => {
+        socket.on("join-meet", async (data : {id : string , userId : string} , callback) => {
+            const { id , userId} = data; 
             meetId = id;
+            roomUserId = userId ; 
             socket.join(meetId);
             console.log(`User ${socket.id} joined meet: ${meetId}`);
             
@@ -53,14 +67,18 @@ export const setUpMediaSoupServer = (io: Server) => {
 
                     rooms[meetId] = {
                         router: roomRouter,
-                        producerTransports: {},
-                        consumerTransports: {},
-                        producers: {},
-                        consumers :{}
+                        users: {
+                            [roomUserId]: {
+                                producerTransports: {},
+                                consumerTransports: {},
+                                producers: {},
+                                consumers: {}
+                            }
+                        }
                     };
                     
-                    
-                    console.log("Router created successfully:", roomRouter.id);
+                    console.log("the users are , " , rooms[meetId].users);
+                    console.log("Router created successfully:", roomRouter.id , roomUserId);
                 } catch (error) {
                     console.error("Failed to create router:", error);
                     return;
@@ -83,7 +101,6 @@ export const setUpMediaSoupServer = (io: Server) => {
             callback({success : true});
             
         });
-        
 
         //get router rtp capabilities 
         socket.on("getRouterRtpCapabilities" , async(data , callback)=>{
@@ -107,10 +124,19 @@ export const setUpMediaSoupServer = (io: Server) => {
         // Create Producer Transport
         socket.on("createProducerTransport", async (_, callback) => {
             try {
-                if (!meetId) return callback({ error: "Not in a meeting" });
+                if (!meetId || !roomUserId ) return callback({ error: "Not in a meeting" });
+
+                if (!rooms[meetId].users[roomUserId]) {
+                    rooms[meetId].users[roomUserId] = {
+                        producerTransports: {},
+                        consumerTransports: {},
+                        producers: {},
+                        consumers: {}
+                    };
+                }
 
                 const { transport, params } = await createWebRTCTransport(rooms[meetId].router);
-                rooms[meetId].producerTransports[socket.id] = transport;
+                rooms[meetId].users[roomUserId].producerTransports[socket.id] = transport;
 
                 callback({...params , socketId : socket.id});
             } catch (error) {
@@ -125,10 +151,19 @@ export const setUpMediaSoupServer = (io: Server) => {
                 if (!meetId) return callback({ error: "Not in a meeting" });
                 console.log("Room is " , rooms);
 
+                if (!rooms[meetId].users[roomUserId]) {
+                    rooms[meetId].users[roomUserId] = {
+                        producerTransports: {},
+                        consumerTransports: {},
+                        producers: {},
+                        consumers: {}
+                    };
+                }
+
                 console.log("here the router is " , rooms[meetId].router);
 
-                if (!rooms[meetId].consumerTransports[socket.id]) {
-                    rooms[meetId].consumerTransports[socket.id] = {} as any;
+                if (!rooms[meetId].users[roomUserId].consumerTransports[socket.id]) {
+                    rooms[meetId].users[roomUserId].consumerTransports[socket.id] = {} as any;
                 }
                 // Initialize the consumerTransports[socket.id] object if not already
                 // possible chances of errors here 
@@ -137,7 +172,7 @@ export const setUpMediaSoupServer = (io: Server) => {
                 // }
 
                 const {transport , params} = await createWebRTCTransport(rooms[meetId].router) ; 
-                rooms[meetId].consumerTransports[socket.id] = transport; 
+                rooms[meetId].users[roomUserId].consumerTransports[socket.id] = transport; 
                 callback({...params , socketId : socket.id});
                 
             } catch (error) {
@@ -148,8 +183,9 @@ export const setUpMediaSoupServer = (io: Server) => {
         // Connect Producer Transport
         socket.on("connectProducerTransport", async (data, callback) => {
             try {
-                if (!meetId || !rooms[meetId].producerTransports[socket.id]) return;
-                await rooms[meetId].producerTransports[data.socketId].connect({ dtlsParameters: data.dtlsParameters });
+                if (!meetId || !rooms[meetId].users[roomUserId].producerTransports[socket.id]) return;
+                console.log("the producer transport is " , rooms[meetId].users[roomUserId].producerTransports[socket.id])
+                await rooms[meetId].users[roomUserId].producerTransports[data.socketId].connect({ dtlsParameters: data.dtlsParameters });
 
             } catch (error) {
                 console.error("Error connecting producer transport:", error);
@@ -160,9 +196,9 @@ export const setUpMediaSoupServer = (io: Server) => {
         socket.on("connectConsumerTransport", async (data, callback) => {
             console.log("The code is reaching connection phase successfully");
             try {
-                if (!meetId || !rooms[meetId].consumerTransports[data.socketId]|| !data.socketId) return;
+                if (!meetId || !rooms[meetId].users[roomUserId].consumerTransports[data.socketId]|| !data.socketId) return;
 
-                await rooms[meetId].consumerTransports[data.socketId].connect({dtlsParameters : data.dtlsParameters}); 
+                await rooms[meetId].users[roomUserId].consumerTransports[data.socketId].connect({dtlsParameters : data.dtlsParameters}); 
 
                 callback();
             } catch (error) {
@@ -174,7 +210,7 @@ export const setUpMediaSoupServer = (io: Server) => {
        // Produce Media (Publisher)
         socket.on("produce", async (data, callback) => {
             try {
-                if (!meetId || !rooms[meetId].producerTransports[socket.id]) return;
+                if (!meetId || !rooms[meetId].users[roomUserId].producerTransports[socket.id]) return;
 
                 const { kind, rtpParameters } = data;
 
@@ -183,27 +219,29 @@ export const setUpMediaSoupServer = (io: Server) => {
                     return;
                 }
 
-                const producer = await rooms[meetId].producerTransports[socket.id].produce({
+                const producer = await rooms[meetId].users[roomUserId].producerTransports[socket.id].produce({
                     kind,
                     rtpParameters
                 });
 
+                console.log("the producer which is created is " , producer, producer.kind);
+
                 const producerId = producer.id;
 
                 // Initialize if not already
-                rooms[meetId].producers[producerId] = {} as any;
+                rooms[meetId].users[roomUserId].producers[producerId] = {} as any;
 
                 // Store the producer based on kind
                 if (kind === "audio") {
-                    rooms[meetId].producers[producerId].audio = producer;
+                    rooms[meetId].users[roomUserId].producers[producerId].audio = producer;
                 } else {
-                    rooms[meetId].producers[producerId].video = producer;
+                    rooms[meetId].users[roomUserId].producers[producerId].video = producer;
                 }
 
                 const socketId = socket.id;
-
+                console.log(rooms[meetId].users[roomUserId].producers)
                 callback({ id: producerId, producerSocketId: socketId , kind});
-
+                console.log("The final created producers are " , rooms[meetId].users[roomUserId].producers)
                 // Notify others in the room about the new producer
                 socket.broadcast.emit("newProducer", {producerId , kind});
 
@@ -218,13 +256,14 @@ export const setUpMediaSoupServer = (io: Server) => {
             // Get producers
             socket.on("getProducers", async (data, callback) => {
                 const { id } = data;
+                console.log("Get producer socket at the backend invoked");
             
                 if (!rooms[id]) {
                     return callback({ error: "Room not found" });
                 }
             
-                const producerEntries = Object.values(rooms[id].producers);
-            
+                const producerEntries = Object.values(rooms[id].users[roomUserId].producers);
+                console.log("The producer Entries are " , producerEntries);
                 const producerInfo: { id: string; kind: "audio" | "video" }[] = [];
             
                 for (const producerPair of producerEntries) {
@@ -246,9 +285,11 @@ export const setUpMediaSoupServer = (io: Server) => {
         socket.on("consume", async (data, callback) => {
             try {
                 console.log("The code is reaching the consumer consume part! ");
-                if (!meetId || !rooms[meetId].consumerTransports[socket.id]) return;
+                if (!meetId || !rooms[meetId].users[roomUserId].consumerTransports[socket.id]) return;
 
                 const { producerId, rtpCapabilities , kind} = data;
+                console.log("the consumertransport to check is " , rooms[meetId].users[roomUserId].consumerTransports[socket.id]);
+                console.log("the producerid recieved in the consume backend is" , producerId); 
                 let producer; 
 
 
@@ -256,22 +297,22 @@ export const setUpMediaSoupServer = (io: Server) => {
                     return callback({ error: "Cannot consume" });
                 }
 
-                producer = rooms[meetId].producers[producerId].audio; 
 
 
                 if(kind === "audio"){
-                    producer = rooms[meetId].producers[producerId].audio;
+                    console.dir("The producers to consumer are" , rooms[meetId].users[roomUserId].producers[producerId]);
+                    producer = rooms[meetId].users[roomUserId].producers[producerId].audio;
                     if(!producer){
                         callback({error : "No Producer in the consume section found"})
                         return ; 
                     }
-                    const consumer = await rooms[meetId].consumerTransports[socket.id].consume({
+                    const consumer = await rooms[meetId].users[roomUserId].consumerTransports[socket.id].consume({
                         producerId: producer?.id,
                         rtpCapabilities,
                         paused: false,
                     });
     
-                    rooms[meetId].consumers[consumer.id] = consumer ;
+                    rooms[meetId].users[roomUserId].consumers[consumer.id] = consumer ;
     
                     callback({
                         id: consumer.id,
@@ -280,18 +321,19 @@ export const setUpMediaSoupServer = (io: Server) => {
                         rtpParameters: consumer.rtpParameters,
                     });
                 } else {
-                    producer = rooms[meetId].producers[producerId].video;
+                    console.log("the video consumer producer is " , rooms[meetId].users[roomUserId]);
+                    producer = rooms[meetId].users[roomUserId].producers[producerId].video;
                     if(!producer){
                         callback({error : "No Producer in the consume section found"});
                         return; 
                     }
-                    const consumer = await rooms[meetId].consumerTransports[socket.id].consume({
+                    const consumer = await rooms[meetId].users[roomUserId].consumerTransports[socket.id].consume({
                         producerId : producer?.id,
                         rtpCapabilities, 
                         paused : true,
                     });
 
-                    rooms[meetId].consumers[consumer.id] = consumer;
+                    rooms[meetId].users[roomUserId].consumers[consumer.id] = consumer;
                     callback({
                         id : consumer.id , 
                         producerId : producerId , 
@@ -309,7 +351,7 @@ export const setUpMediaSoupServer = (io: Server) => {
         socket.on("consumer-resume" , async({consumerId})=>{
             console.log("Inside the consumer resuming part ");
             if(!consumerId || !meetId) return null ;
-            const consumer = rooms[meetId].consumers[consumerId];
+            const consumer = rooms[meetId].users[roomUserId].consumers[consumerId];
 
             if(consumer) await consumer.resume(); 
         })
@@ -320,14 +362,14 @@ export const setUpMediaSoupServer = (io: Server) => {
 
             console.log(`User ${socket.id} disconnected from meet: ${meetId}`);
 
-            delete rooms[meetId].producerTransports[socket.id];
-            delete rooms[meetId].consumerTransports[socket.id];
-            delete rooms[meetId].producers[socket.id];
+            delete rooms[meetId].users[roomUserId].producerTransports[socket.id];
+            delete rooms[meetId].users[roomUserId].consumerTransports[socket.id];
+            delete rooms[meetId].users[roomUserId].producers[socket.id];
 
             // Cleanup empty rooms
             if (
-                Object.keys(rooms[meetId].producerTransports).length === 0 &&
-                Object.keys(rooms[meetId].consumerTransports).length === 0
+                Object.keys(rooms[meetId].users[roomUserId].producerTransports).length === 0 &&
+                Object.keys(rooms[meetId].users[roomUserId].consumerTransports).length === 0
             ) {
                 delete rooms[meetId];
             }

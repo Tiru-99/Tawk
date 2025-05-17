@@ -9,6 +9,7 @@ import compression from 'compression';
 import { setUpMediaSoupServer } from './mediasoup';
 import { connectRedis } from './config/redis';
 import { startMessageConsumer } from './config/kafka';
+import { SocketService } from './mediasoup/SocketServer';
 
 
 dotenv.config({
@@ -27,9 +28,9 @@ const io = new Server(server, {
 });
 
 console.log(process.env.FRONTEND_URL);
-
+new SocketService(server); 
 setupSocketIOServer(io);
-setUpMediaSoupServer(io);
+// setUpMediaSoupServer(io);
 
 app.use(express.json({limit: "16kb"}))
 app.use(express.urlencoded({extended: true, limit: "16kb"}))
@@ -56,6 +57,8 @@ const PORT = 5000 ;
 //consume kafka streams
 startMessageConsumer(); 
 
+
+
 app.get('/' , (req, res)=>{
     res.send("hello world this is aayush tirmanwar");
 })
@@ -65,6 +68,7 @@ import authRoute from './routes/auth.routes';
 import chatRoute from './routes/chat.routes';
 import messageRoute from './routes/message.routes';
 import imageUploadRoute from './routes/imageUpload.routes'
+import { Socket } from 'dgram';
 
 app.use("/api/v1/user" , authRoute);
 app.use("/api/v1/chat" , chatRoute );

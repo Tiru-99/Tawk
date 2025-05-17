@@ -17,7 +17,6 @@ const kafka = new Kafka({
     cert: fs.readFileSync(path.resolve("./service.cert"), "utf-8"),
     key: fs.readFileSync(path.resolve("./service.key"), "utf-8"),
   },
-  // No sasl block needed in pure SSL auth
 });
 
 
