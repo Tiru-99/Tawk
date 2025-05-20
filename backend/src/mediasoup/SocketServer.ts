@@ -66,37 +66,46 @@ export class SocketService {
                 console.log(`User Disconnected`);
             });
 
-            socket.on(WebSocketEventType.JOIN_ROOM , async(data : {userId : string , roomId : string , name : string} , cb : SocketCallback) => {
-                const {userId , roomId , name} = data ; 
-                if(!userId || !roomId || !name){
-                    console.log("Missing Data in JOIN_ROOM" , userId , name , roomId);
-                    cb({error : "Missing Data in JOIN_ROOM"});
-                    return; 
-                }
-                let newRoom ; 
-                const room = this._roomList.get(roomId); 
-                if(!room){
-                    console.log("Room not found , creating a room ");
-                    const worker = await createMediasoupWorker(); 
-                    newRoom = this._roomList.set(roomId , new Room(roomId , io , worker))
-                    socket.roomId = roomId; 
-                    cb({message : "Room not found , created a new room"}); 
-                    return; 
-                }
-
-                const peer = room?.createPeer(name , userId); 
-                socket.roomId = roomId; 
-                socket.to(roomId).emit(WebSocketEventType.USER_JOINED , {
-                    message : `${name} joined in the room`,
-                    user : peer 
-                });
-
-                socket.join(roomId); 
-
-                console.log("Room joined successfully" , {name , roomId}); 
-                cb({message : "Room joined successfully "})
-
+            socket.on(WebSocketEventType.JOIN_ROOM, async (
+              data: { userId: string; roomId: string; name: string },
+              cb: SocketCallback
+            ) => {
+              const { userId, roomId, name } = data;
+            
+              if (!userId || !roomId || !name) {
+                console.log("Missing Data in JOIN_ROOM", userId, name, roomId);
+                cb({ error: "Missing data in JOIN_ROOM" });
+                return;
+              }
+            
+              let room = this._roomList.get(roomId);
+            
+              if (!room) {
+                console.log("Room not found, creating a room");
+                const worker = await createMediasoupWorker();
+                this._roomList.set(roomId, new Room(roomId, io, worker));
+              }
+            
+              room = this._roomList.get(roomId); 
+            
+              if (!room) {
+                cb({ error: "Failed to create or retrieve room" });
+                return;
+              }
+            
+              const peer = room.createPeer(name, userId);
+              socket.roomId = roomId;
+            
+              socket.join(roomId);
+              socket.to(roomId).emit(WebSocketEventType.USER_JOINED, {
+                message: `${name} joined the room`,
+                user: peer,
+              });
+            
+              console.log("Room joined successfully", { name, roomId });
+              cb({ message: "Room joined successfully" });
             });
+            
 
             socket.on(WebSocketEventType.EXIT_ROOM , ( {userId} , cb )=> {
 
@@ -111,7 +120,7 @@ export class SocketService {
                     return; 
                 }
 
-
+                console.log("inside the exit room");
                 const room = this._roomList.get(socket.roomId);
                 if(!room){
                     console.log("Room does not exist");
@@ -175,7 +184,7 @@ export class SocketService {
 
             socket.on(
                 WebSocketEventType.CREATE_WEBRTC_TRANSPORT,
-                async (_, cb: SocketCallback) => {
+                async ({userId}, cb: SocketCallback) => {
                   const room = this._roomList.get(socket.roomId!);
                   if (!room) {
                     console.log(WebSocketEventType.ERROR, "Couldn't find room");
@@ -183,7 +192,7 @@ export class SocketService {
                     return;
                   }
         
-                  const params = await room.createWebRtcTransport(socket.id);
+                  const params = await room.createWebRtcTransport(userId);
                   cb(params);
                   console.log("created transport  , the params are " , params); 
                   return;
@@ -214,7 +223,7 @@ export class SocketService {
                   console.log("IN PRODUCE EVENT");
         
                   const room = this._roomList.get(socket.roomId!);
-        
+                  console.log(room?._peers);
                   if (!room) {
                     return cb({ ERROR: "error couldn't find the room" });
                   }
@@ -225,10 +234,21 @@ export class SocketService {
                     rtpParameters,
                     kind
                   )) as string;
-        
+                  
+                  const newProducers = [
+                    {
+                      producer_id,
+                      userId,
+                    },
+                  ];
+                  
+                  //emit new producers 
+                  socket.to(socket.roomId!).emit(WebSocketEventType.NEW_PRODUCERS , newProducers)
                   cb({
                     producer_id,
+                    userId 
                   });
+
                 }
               );
 

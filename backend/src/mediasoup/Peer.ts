@@ -25,6 +25,7 @@ export default class Peer {
     //connect the transport 
     async connectTransport(transportId: string, dtlsParameters: DtlsParameters) {
         const transport = this.transport.get(transportId);
+        console.log("The transport id is , ", transportId);
         if (!transport) {
             console.log("Error , cannot find transport");
         }
@@ -67,6 +68,7 @@ export default class Peer {
                 rtpCapabilities,
                 paused: false,
             });
+            console.log("Consumer successfully made")
         } catch (error) {
             console.error("Consume failed", error);
             return;
@@ -128,6 +130,10 @@ export default class Peer {
 
     get_producers(){
         return this.producers ; 
+    }
+
+    get_transports(){
+        return this.transport; 
     }
 
 }

@@ -84,7 +84,12 @@ export default class Room {
         });
     
         console.log("Adding transport", { transportId: transport.id });
-        this._peers.get(userId)?.addTransport(transport);
+        const peer = this._peers.get(userId);
+        if (!peer) {
+          console.error("Peer not found for userId:", userId);
+          return;
+        }
+        peer.addTransport(transport);
     
         return {
           params: {
@@ -138,7 +143,7 @@ export default class Room {
           if (!peer) {
             throw new Error(`Peer with id ${userId} not found`);
           }
-      
+          console.log("the params are" , producerTransportId);
           const producer = await peer.createProducer(producerTransportId, rtpParameters, kind);
 
           if(!producer){
