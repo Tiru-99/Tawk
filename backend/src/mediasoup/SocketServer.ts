@@ -128,6 +128,12 @@ export class SocketService {
                     return ; 
                 }
 
+                const peerData = room._peers.get(userId);
+                const producersMap = peerData?.get_producers();
+                const producerIds = producersMap ? Array.from(producersMap.keys()) : [];
+
+                console.log("The producer Ids is" , producerIds);
+
                 const peer = room.removePeer(userId);
                 if(room._peers.size <= 0 ){
                     this._roomList.delete(room.id);
@@ -135,10 +141,11 @@ export class SocketService {
 
                 socket.to(room.id).emit(WebSocketEventType.USER_LEFT , {
                     message : `${peer?.name} left the room` ,
-                    user : peer
+                    user : peer ,
+                    leavingProducers : producerIds
                 })
 
-                console.log("Peer removed successfully!");
+                console.log("Peer removed successfully!" , peer);
             });
 
             socket.on(WebSocketEventType.GET_IN_ROOM_USERS , ( _ , cb : SocketCallback) => {

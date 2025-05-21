@@ -12,7 +12,6 @@ import {
   IceParameters,
   MediaKind,
   Producer,
-  RtpParameters,
   Transport ,
   Consumer
 } from "mediasoup-client/lib/types";
@@ -25,21 +24,27 @@ interface webRtcTransportParams {
   dtlsParameters: DtlsParameters;
 }
 
-export interface ProducerContainer {
+interface ProducerContainer {
   producer_id: string;
   userId: string;
 }
 
-export interface Peer {
+interface Peer {
   id: string;
   name: string;
 }
 
-export interface RemoteStream {
+type ConsumerEntry = {
+  consumer : Consumer ; 
+  userId : string ; 
+}
+
+interface RemoteStream {
   consumer: Consumer;
   stream: MediaStream;
   kind: MediaKind;
   producerId: string;
+  userId : string;
 }
 
 export default function Page() {
@@ -53,7 +58,7 @@ export default function Page() {
   const deviceRef = useRef<Device | null>(null);
   const consumerTransportRef = useRef<Transport | null>(null);
   const producerTransportRef = useRef<Transport | null> (null);
-  const consumers = useRef<Map<string, Consumer>>(new Map());
+  const consumers = useRef<Map<string, ConsumerEntry>>(new Map());
   const consumedProducers = useRef<Set<string>>(new Set());
 
   //states 
@@ -62,6 +67,7 @@ export default function Page() {
   const[isMicOn , setIsMicOn] = useState<boolean>(false); 
   const [usersInRoom, setUsersInRoom] = useState<Peer[]>([]);
   const[remoteStream , setRemoteStreams] = useState<RemoteStream[]>([]); 
+
 
   const socket = useMemo(
     () =>
@@ -95,19 +101,16 @@ export default function Page() {
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      // Proper async cleanup
+      //cleanup
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
 
   }, [roomId]);
 
-  //get Producers useEffect 
-
 
 
   useEffect(() => {
    //consume all the producers 
-     
     if (producers && producers.length > 0) {
       producers.forEach((producer) => {
         if (!consumedProducers.current.has(producer.producer_id)) {
@@ -188,11 +191,26 @@ export default function Page() {
   };
   
   const userLeft = (args: any) => {
-    console.log("USER LEFT ARS", args);
+    const leftUser = args.user as Peer;
+    //leaving producerIds 
+    const producerIds = args.leavingProducers ; 
+  
+    console.log("User who left:", leftUser , producerIds);
+  
+    // Remove that user from the room UI
+    setUsersInRoom((v) => v.filter((peer) => peer.id !== leftUser.id));
 
-    const user = args.user as Peer;
-    setUsersInRoom((v) => v.filter((peer) => peer.id !== user.id));
+    setRemoteStreams((streams) => {  
+      const filtered = streams.filter(
+        (stream) => !producerIds.includes(stream.producerId)
+      );
+      return filtered;
+    });
+    
+    console.log("✅ Cleanup done for user:", leftUser.id);
   };
+  
+  
   const userJoined = (args: any) => {
     const user = args.user as Peer;
     setUsersInRoom((v) => [...v, user]);
@@ -285,13 +303,13 @@ export default function Page() {
       WebSocketEventType.GET_PRODUCERS,
       {}
     )) as { producerList: ProducerContainer[]};
-    console.log("the producers to send are" , typeof(producerList)); 
 
     if(!producerList){
       console.log("No producers to send found");
       return;
     }
     setProducers(producerList);
+
   };
 
 
@@ -356,6 +374,7 @@ export default function Page() {
             switch (state) {
               case "disconnected":
                 console.log("Producer disconnected");
+                producerTransportRef.current?.close();
                 break;
             }
           });
@@ -371,12 +390,13 @@ export default function Page() {
 
   const consume = async (producerId : string) => {
     consumeProducers(producerId).then((data)=> {
+      console.log("The producer Id inside consume is" , producerId);
       if(!data){
         console.log("Consumer not found!");
         return ;
       }
       const { consumer , kind } = data; 
-      consumers.current.set(consumer.id , consumer);
+      consumers.current.set(consumer.id , {consumer , userId});
       if (kind === "video" || kind === "audio") {
         setRemoteStreams((v) => [...v, data]);
       }
@@ -392,7 +412,7 @@ export default function Page() {
     }
     console.log("The code is reaching here in the consumer part"); 
     const rtpCapabilities = deviceRef.current.rtpCapabilities; 
-
+    console.log("the rttp ils " , rtpCapabilities);
     const data = await sendRequest(WebSocketEventType.CONSUME , {
       userId : userId , 
       rtpCapabilities ,
@@ -416,8 +436,9 @@ export default function Page() {
     console.log('the consumer is' , consumer); 
     const stream =  new MediaStream(); 
     stream.addTrack(consumer.track);
-
+    console.log("The stream is set" , consumer , stream , kind , producerId);
     return{
+      userId : userId , 
       consumer , 
       stream , 
       kind , 
@@ -435,8 +456,8 @@ export default function Page() {
     await getRtpCapabilities();
     await getCurrentUsers();
     await createAndConnectConsumerTransports(); 
-    await getProducers(); 
     await createProducerTransport(); 
+    await getProducers(); 
   }
 
 
@@ -475,34 +496,57 @@ export default function Page() {
     }
   };
   
-
-
+  
   return (
-    <>
-    <div>Hey, this is my video calling application</div>
-
-    <div>
-      <h2>Local Stream</h2>
-      <video ref={localStreamRef} autoPlay playsInline muted />
+    <div className="min-h-screen bg-gray-100 p-4">
+      <h1 className="text-2xl font-bold text-center mb-6">🎥 Video Calling App</h1>
+  
+      {/* Local Stream */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-2">👤 Local Stream</h2>
+        <div className="border rounded-lg overflow-hidden w-full max-w-md mx-auto">
+          <video ref={localStreamRef} autoPlay playsInline muted className="w-full h-auto bg-black" />
+        </div>
+      </section>
+  
+      {/* Remote Video Streams */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-2">📹 Remote Video Streams</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {remoteStream?.filter(({ kind }) => kind === "video").map(({ stream }, index) => (
+            <div key={index} className="border rounded-lg overflow-hidden bg-white shadow">
+              <video
+                autoPlay
+                playsInline
+                className="w-full h-auto"
+                muted
+                ref={(videoElement) => {
+                  if (videoElement) {
+                    videoElement.srcObject = stream;
+                  }
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+  
+      {/* Remote Audio Streams */}
+      <section>
+        {remoteStream?.filter(({ kind }) => kind === "audio").map(({ stream }, index) => (
+          <div key={index} className="mb-2">
+            <audio
+              autoPlay
+              ref={(audioElement) => {
+                if (audioElement) {
+                  audioElement.srcObject = stream;
+                }
+              }}
+            />
+          </div>
+        ))}
+      </section>
     </div>
-
-    <h2>People are</h2>
-    {remoteStream.map(({ stream, kind }, index) => (
-      <div key={index}>
-        <h3>{kind} Stream</h3>
-        <video
-          autoPlay
-          playsInline
-          ref={(videoElement) => {
-            if (videoElement) {
-              videoElement.srcObject = stream;
-            }else{
-              console.log("Video element is not working ")
-            }
-          }}
-        />
-      </div>
-    ))}
-  </>
-  )
+  );
+  
 }
