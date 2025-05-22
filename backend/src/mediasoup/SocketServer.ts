@@ -268,8 +268,6 @@ export class SocketService {
                   if (room) {
                     room.closeProducer(producer_id, socket.id);
                   }
-
-                  socket.to(socket.roomId!).emit("producer-cleanup" , {producer_id})
                 }
             );
 
@@ -303,6 +301,46 @@ export class SocketService {
                   cb(params);
                 }
               );
+            
+              socket.on(WebSocketEventType.ADD_PAUSED_PRODUCER, ({videoProducerId}, cb) => {
+                
+                const room = this._roomList.get(socket.roomId!); 
+
+                if(!room){
+                  console.warn("No room present!")
+                  cb({error : "Room does not exists"}); 
+                }
+
+                if(!videoProducerId){
+                  console.warn("No videoProducer found")
+                  cb({error : "Video ProducerId not found"});
+                }
+
+              const pausedProducers = room?.addAndGetPausedProducer(videoProducerId);
+              socket.to(socket.roomId!).emit(WebSocketEventType.GET_PAUSED_PRODUCERS , pausedProducers);
+                // Send acknowledgment (optional)
+                cb({ success: true});
+              });
+
+              socket.on(WebSocketEventType.REMOVE_PAUSED_PRODUCER , ({videoProducerId} , cb) => {
+                const room = this._roomList.get(socket.roomId!); 
+
+                if(!room){
+                  console.warn("No room present!")
+                  cb({error : "Room does not exists"}); 
+                }
+
+                if(!videoProducerId){
+                  console.warn("No videoProducer found")
+                  cb({error : "Video ProducerId not found"});
+                }
+
+                const pausedProducers = room?.removeAndGetPausedProducer(videoProducerId);
+                socket.to(socket.roomId!).emit(WebSocketEventType.GET_PAUSED_PRODUCERS , pausedProducers);
+                cb({success : true }); 
+              });
+              
+              
         })
     }
 }

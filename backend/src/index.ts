@@ -55,7 +55,7 @@ const PORT = 5000 ;
 })();
 
 //consume kafka streams
-// startMessageConsumer(); 
+startMessageConsumer(); 
 
 
 
@@ -68,7 +68,7 @@ import authRoute from './routes/auth.routes';
 import chatRoute from './routes/chat.routes';
 import messageRoute from './routes/message.routes';
 import imageUploadRoute from './routes/imageUpload.routes'
-import { Socket } from 'dgram';
+
 
 app.use("/api/v1/user" , authRoute);
 app.use("/api/v1/chat" , chatRoute );

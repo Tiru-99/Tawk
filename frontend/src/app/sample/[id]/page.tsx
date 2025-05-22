@@ -16,6 +16,7 @@ import {
   Transport,
   Consumer
 } from "mediasoup-client/lib/types";
+import { send } from "process";
 
 //types and interfaces 
 interface webRtcTransportParams {
@@ -143,6 +144,23 @@ export default function Page() {
       socket.off("producer-cleanup", handleProducerCleanup);
     }
   }, []);
+
+  //getting the paused producers 
+  useEffect(() => {
+    const getPausedProducers = (pausedProducers : string[]) => {
+      if(!pausedProducers){
+        console.log("No paused producers received");
+      }
+      console.log("UE PP :" , pausedProducers);
+      setPausedVideoProducerIds(pausedProducers);
+    };  
+
+    socket.on(WebSocketEventType.GET_PAUSED_PRODUCERS , getPausedProducers);
+
+    return () => {
+      socket.off(WebSocketEventType.GET_PAUSED_PRODUCERS , getPausedProducers); 
+    }
+  },[socket])
 
 
 
@@ -536,15 +554,20 @@ export default function Page() {
 
   console.log("video on state", isVideoOn);
   console.log("audio on state", isMicOn);
+  console.log("paused Producers" , pausedVideoProducerIds);
 
   const turnVideoOn = async () => {
     if (!isVideoOn) {
       // TURN ON
       try {
         if (videoProducerRef.current) {
-            const videoProducerId = videoProducerRef.current.id;
-            videoProducerRef.current.resume(); 
-            setPausedVideoProducerIds((prev) => prev.filter((id) => id !== videoProducerId ));
+          const videoProducerId = videoProducerRef.current.id;
+          await videoProducerRef.current.resume();
+  
+          const response = await sendRequest(WebSocketEventType.REMOVE_PAUSED_PRODUCER, { videoProducerId });
+          if (response.error) {
+            console.error("Error removing paused producer:", response.error);
+          }
         }
         setIsVideoOn(true);
       } catch (error) {
@@ -553,19 +576,22 @@ export default function Page() {
     } else {
       // TURN OFF
       try {
-
         if (videoProducerRef.current) {
           const videoProducerId = videoProducerRef.current.id;
-          videoProducerRef.current.pause();
-          setPausedVideoProducerIds(prev => [...prev, videoProducerId]); // pause instead of close
+          await videoProducerRef.current.pause();
+  
+          const response = await sendRequest(WebSocketEventType.ADD_PAUSED_PRODUCER, { videoProducerId });
+          if (response.error) {
+            console.error("Error adding paused producer:", response.error);
+          }
         }
-
         setIsVideoOn(false);
       } catch (error) {
         console.log("Video pause error:", error);
       }
     }
   };
+  
 
 
 
@@ -617,7 +643,7 @@ export default function Page() {
       >
         {remoteStream
           .filter(({ kind }) => kind === "video")
-          .map(({ stream }, index) => (
+          .map(({ stream, producerId }, index) => (
             <div
               key={index}
               className="rounded-xl overflow-hidden bg-white/5 backdrop-blur shadow-lg border border-white/10"
@@ -632,17 +658,28 @@ export default function Page() {
                         : "100%",
               }}
             >
-              <video
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-contain aspect-video"
-                ref={(videoElement) => {
-                  if (videoElement) {
-                    videoElement.srcObject = stream;
-                  }
-                }}
-              />
+              {!pausedVideoProducerIds.includes(producerId) ? (
+                <video
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-contain aspect-video"
+                  ref={(videoElement) => {
+                    if (videoElement) {
+                      videoElement.srcObject = stream;
+                    }
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-black text-white">
+                  <img
+                    src={"/default-avatar.png"}
+                    alt={`tiru's avatar`}
+                    className="w-16 h-16 rounded-full mb-2"
+                  />
+                  <span className="text-lg font-medium">{"Tiru"}</span>
+                </div>
+              )}
             </div>
           ))}
       </div>

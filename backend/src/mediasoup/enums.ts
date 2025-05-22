@@ -25,6 +25,9 @@ export enum WebSocketEventType {
     GET_MY_ROOM_INFO = "getMyRoomInfo",
     PRODUCER_CLOSED = "producerClosed",
     CONSUMER_CLOSED = "consumerClosed",
+    ADD_PAUSED_PRODUCER = "addPausedProducer",
+    REMOVE_PAUSED_PRODUCER = "removePausedProducer",
+    GET_PAUSED_PRODUCERS = "getPauseProducers",
   
     // client side
     ROOM_CREATED_MESSAGE = "createdRoom",

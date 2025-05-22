@@ -10,6 +10,7 @@ export default class Room {
     _peers : Map<string , Peer>;
     io : io.Server
     private _router : Router | null = null ;
+    private _pausedVideoProducerIds: string[] = [];
 
     constructor(id : string , io : io.Server ,  worker : Worker){
         this.id = id ; 
@@ -242,4 +243,31 @@ export default class Room {
         });
         return;
       }
+
+      addAndGetPausedProducer(producerId: string): string[] {
+        if (!producerId) {
+          throw new Error("No producerId found in pause producer");
+        }
+      
+        if (!this._pausedVideoProducerIds.includes(producerId)) {
+          this._pausedVideoProducerIds.push(producerId);
+        }
+      
+        return this._pausedVideoProducerIds;
+      }
+
+      removeAndGetPausedProducer(producerId : string) : string[]  {
+        if(!producerId){
+          throw new Error("No producerId found in pause producer"); 
+        }
+
+        if(!this._pausedVideoProducerIds.includes(producerId)){
+          console.warn("paused producer with this id not found");
+          throw new Error("paused producer does not exists");
+        }
+
+        this._pausedVideoProducerIds = this._pausedVideoProducerIds.filter(id => id !== producerId);
+        return this._pausedVideoProducerIds;
+      }
+       
 }
