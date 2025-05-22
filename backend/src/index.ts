@@ -55,7 +55,7 @@ const PORT = 5000 ;
 })();
 
 //consume kafka streams
-startMessageConsumer(); 
+// startMessageConsumer(); 
 
 
 

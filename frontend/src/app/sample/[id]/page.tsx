@@ -2,9 +2,10 @@
 import { io } from "socket.io-client";
 import { Device } from 'mediasoup-client';
 import { useParams } from "next/navigation"
-import { useMemo, useEffect, useState, useRef} from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { RtpCapabilities } from "mediasoup-client/lib/RtpParameters";
+import { LucidePcCase, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { WebSocketEventType } from "@/lib/types";
 import {
   DtlsParameters,
@@ -12,7 +13,7 @@ import {
   IceParameters,
   MediaKind,
   Producer,
-  Transport ,
+  Transport,
   Consumer
 } from "mediasoup-client/lib/types";
 
@@ -35,8 +36,8 @@ interface Peer {
 }
 
 type ConsumerEntry = {
-  consumer : Consumer ; 
-  userId : string ; 
+  consumer: Consumer;
+  userId: string;
 }
 
 interface RemoteStream {
@@ -44,29 +45,32 @@ interface RemoteStream {
   stream: MediaStream;
   kind: MediaKind;
   producerId: string;
-  userId : string;
+  userId: string;
 }
 
 export default function Page() {
   const roomId = useParams();
   const userId = useMemo(() => uuidv4(), []);
-  console.log("the user id is" ,userId);
+  console.log("the user id is", userId);
   //refs 
-  const localStreamRef = useRef<HTMLVideoElement | null>(null); 
+  const localVideoRef = useRef<MediaStream | null>(null);
+  const localStreamRef = useRef<HTMLVideoElement | null>(null);
   const audioProducerRef = useRef<Producer | null>(null);
   const videoProducerRef = useRef<Producer | null>(null);
   const deviceRef = useRef<Device | null>(null);
   const consumerTransportRef = useRef<Transport | null>(null);
-  const producerTransportRef = useRef<Transport | null> (null);
+  const producerTransportRef = useRef<Transport | null>(null);
   const consumers = useRef<Map<string, ConsumerEntry>>(new Map());
   const consumedProducers = useRef<Set<string>>(new Set());
 
   //states 
   const [rtpCapabilities, setRtpCapabilities] = useState<RtpCapabilities>();
-  const [producers , setProducers] = useState<ProducerContainer[]>([]); 
-  const[isMicOn , setIsMicOn] = useState<boolean>(false); 
+  const [producers, setProducers] = useState<ProducerContainer[]>([]);
+  const [isMicOn, setIsMicOn] = useState<boolean>(true);
+  const [isVideoOn, setIsVideoOn] = useState<boolean>(true);
   const [usersInRoom, setUsersInRoom] = useState<Peer[]>([]);
-  const[remoteStream , setRemoteStreams] = useState<RemoteStream[]>([]); 
+  const [remoteStream, setRemoteStreams] = useState<RemoteStream[]>([]);
+  const [pausedVideoProducerIds, setPausedVideoProducerIds] = useState<string[]>([]);
 
 
   const socket = useMemo(
@@ -80,24 +84,24 @@ export default function Page() {
   useEffect(() => {
     //user joins a room , 
     const init = async () => {
-      await loadEverything(); 
-      await startStreaming();  
+      await loadEverything();
+      await startStreaming();
     };
-  
+
     init();
 
     socket.onAny((event, args) => {
       routeIncommingEvents({ event, args });
     });
 
-    const handleBeforeUnload = async(event : any) => {
-      const response = await sendRequest(WebSocketEventType.EXIT_ROOM , {userId});
-      console.log("this is the response" , response);
+    const handleBeforeUnload = async (event: any) => {
+      const response = await sendRequest(WebSocketEventType.EXIT_ROOM, { userId });
+      console.log("this is the response", response);
       event.preventDefault();
-      event.returnValue = ''; 
+      event.returnValue = '';
     };
-    
-    
+
+
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
@@ -110,20 +114,37 @@ export default function Page() {
 
 
   useEffect(() => {
-   //consume all the producers 
+    //consume all the producers 
     if (producers && producers.length > 0) {
       producers.forEach((producer) => {
         if (!consumedProducers.current.has(producer.producer_id)) {
-          console.log("The producers are : " , producer);
+          console.log("The producers are : ", producer);
           consume(producer.producer_id);
           consumedProducers.current.add(producer.producer_id);
         }
       });
-    } 
+    }
 
   }, [roomId, producers]);
 
-  
+
+  useEffect(() => {
+    //clean up producers while turning on mic and video; 
+    console.log("coming into producer cleanup useeffect");
+    const handleProducerCleanup = (producerId: string) => {
+      setRemoteStreams(prev =>
+        prev.filter(stream => stream.producerId !== producerId)
+      );
+    };
+
+    socket.on("producer-cleanup", handleProducerCleanup);
+
+    return () => {
+      socket.off("producer-cleanup", handleProducerCleanup);
+    }
+  }, []);
+
+
 
   const sendRequest = (eventType: string, data: any): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -179,38 +200,38 @@ export default function Page() {
 
   const newProducers = (args: ProducerContainer[] | ProducerContainer) => {
     console.log("Received new producers:", args);
-    
+
     // Handle both single object and array cases
     const producersArray = Array.isArray(args) ? args : [args];
-    
+
     setProducers((v) => {
       // Make sure v is always an array
       const currentProducers = Array.isArray(v) ? v : [];
       return [...currentProducers, ...producersArray];
     });
   };
-  
+
   const userLeft = (args: any) => {
     const leftUser = args.user as Peer;
     //leaving producerIds 
-    const producerIds = args.leavingProducers ; 
-  
-    console.log("User who left:", leftUser , producerIds);
-  
+    const producerIds = args.leavingProducers;
+
+    console.log("User who left:", leftUser, producerIds);
+
     // Remove that user from the room UI
     setUsersInRoom((v) => v.filter((peer) => peer.id !== leftUser.id));
 
-    setRemoteStreams((streams) => {  
+    setRemoteStreams((streams) => {
       const filtered = streams.filter(
         (stream) => !producerIds.includes(stream.producerId)
       );
       return filtered;
     });
-    
+
     console.log("✅ Cleanup done for user:", leftUser.id);
   };
-  
-  
+
+
   const userJoined = (args: any) => {
     const user = args.user as Peer;
     setUsersInRoom((v) => [...v, user]);
@@ -254,7 +275,7 @@ export default function Page() {
 
       const data = (await sendRequest(
         WebSocketEventType.CREATE_WEBRTC_TRANSPORT,
-        { forceTcp: false , userId : userId }
+        { forceTcp: false, userId: userId }
       )) as { params: webRtcTransportParams };
 
       if (!data) {
@@ -268,10 +289,10 @@ export default function Page() {
       }
       console.log("Consumer Phase 3");
       consumerTransportRef.current = deviceRef.current?.createRecvTransport(data.params);
-      console.log("The consumer Transport Ref is " , consumerTransportRef.current.id);
+      console.log("The consumer Transport Ref is ", consumerTransportRef.current.id);
       consumerTransportRef.current.on("connect", async ({ dtlsParameters }, cb, eb) => {
         sendRequest(WebSocketEventType.CONNECT_TRANSPORT, {
-          userId : userId , 
+          userId: userId,
           transportId: consumerTransportRef.current?.id,
           dtlsParameters,
         })
@@ -289,22 +310,22 @@ export default function Page() {
           consumerTransportRef.current?.close();
         }
       });
-      console.log("Consumer transport setup successfull"); 
+      console.log("Consumer transport setup successfull");
     } catch (error) {
       console.log("Something went wrong while consumer transport", error);
     }
   }
 
-  console.log("the producers state are" , producers);
+  console.log("the producers state are", producers);
 
   const getProducers = async () => {
     console.log("In the get producers part");
-    const {producerList} = (await sendRequest(
+    const { producerList } = (await sendRequest(
       WebSocketEventType.GET_PRODUCERS,
       {}
-    )) as { producerList: ProducerContainer[]};
+    )) as { producerList: ProducerContainer[] };
 
-    if(!producerList){
+    if (!producerList) {
       console.log("No producers to send found");
       return;
     }
@@ -321,7 +342,7 @@ export default function Page() {
         WebSocketEventType.CREATE_WEBRTC_TRANSPORT,
         {
           forceTcp: false,
-          userId : userId , 
+          userId: userId,
           rtpCapabilities: deviceRef.current.rtpCapabilities,
         }
       )) as { params: webRtcTransportParams };
@@ -335,7 +356,7 @@ export default function Page() {
         try {
           producerTransportRef.current.on("connect", ({ dtlsParameters }, cb, eb) => {
             sendRequest(WebSocketEventType.CONNECT_TRANSPORT, {
-              userId : userId , 
+              userId: userId,
               transportId: producerTransportRef.current!.id,
               dtlsParameters,
             })
@@ -351,7 +372,7 @@ export default function Page() {
                 const { producer_id } = (await sendRequest(
                   WebSocketEventType.PRODUCE,
                   {
-                    userId : userId, 
+                    userId: userId,
                     producerTransportId: producerTransportRef.current!.id,
                     kind,
                     rtpParameters,
@@ -373,13 +394,13 @@ export default function Page() {
             console.log(state);
             switch (state) {
               case "disconnected":
-                console.log("Producer disconnected");
                 producerTransportRef.current?.close();
+                console.log("Producer disconnected");
                 break;
             }
           });
 
-        
+
           return true;
         } catch (error) {
           console.log("Producer Creation error :: ", error);
@@ -388,61 +409,61 @@ export default function Page() {
     }
   };
 
-  const consume = async (producerId : string) => {
-    consumeProducers(producerId).then((data)=> {
-      console.log("The producer Id inside consume is" , producerId);
-      if(!data){
+  const consume = async (producerId: string) => {
+    consumeProducers(producerId).then((data) => {
+      console.log("The producer Id inside consume is", producerId);
+      if (!data) {
         console.log("Consumer not found!");
-        return ;
+        return;
       }
-      const { consumer , kind } = data; 
-      consumers.current.set(consumer.id , {consumer , userId});
+      const { consumer, kind } = data;
+      consumers.current.set(consumer.id, { consumer, userId });
       if (kind === "video" || kind === "audio") {
         setRemoteStreams((v) => [...v, data]);
       }
     })
   }
-  console.log("The consumers are " , consumers.current);
-  console.log("The remote streams are " , remoteStream);
+  console.log("The consumers are ", consumers.current);
+  console.log("The remote streams are ", remoteStream);
 
-  const consumeProducers = async(producerId : string) => {
-    if(!deviceRef.current || !consumerTransportRef.current){
+  const consumeProducers = async (producerId: string) => {
+    if (!deviceRef.current || !consumerTransportRef.current) {
       console.log("incomplete refs in consume");
-      return; 
+      return;
     }
-    console.log("The code is reaching here in the consumer part"); 
-    const rtpCapabilities = deviceRef.current.rtpCapabilities; 
-    console.log("the rttp ils " , rtpCapabilities);
-    const data = await sendRequest(WebSocketEventType.CONSUME , {
-      userId : userId , 
-      rtpCapabilities ,
-      consumerTransportId : consumerTransportRef.current.id , 
+    console.log("The code is reaching here in the consumer part");
+    const rtpCapabilities = deviceRef.current.rtpCapabilities;
+    console.log("the rttp ils ", rtpCapabilities);
+    const data = await sendRequest(WebSocketEventType.CONSUME, {
+      userId: userId,
+      rtpCapabilities,
+      consumerTransportId: consumerTransportRef.current.id,
       producerId,
     });
 
     //s
 
-    console.log("The data is " , data);
+    console.log("The data is ", data);
 
-    const { id , kind , rtpParameters } = data ; 
-    console.log("Comsumer_Data" , data);
+    const { id, kind, rtpParameters } = data;
+    console.log("Comsumer_Data", data);
 
     const consumer = await consumerTransportRef.current.consume({
-      id , 
+      id,
       producerId,
-      kind, 
+      kind,
       rtpParameters
     });
-    console.log('the consumer is' , consumer); 
-    const stream =  new MediaStream(); 
+    console.log('the consumer is', consumer);
+    const stream = new MediaStream();
     stream.addTrack(consumer.track);
-    console.log("The stream is set" , consumer , stream , kind , producerId);
-    return{
-      userId : userId , 
-      consumer , 
-      stream , 
-      kind , 
-      producerId 
+    console.log("The stream is set", consumer, stream, kind, producerId);
+    return {
+      userId: userId,
+      consumer,
+      stream,
+      kind,
+      producerId
     }
   }
 
@@ -455,9 +476,9 @@ export default function Page() {
     await joinRoom();
     await getRtpCapabilities();
     await getCurrentUsers();
-    await createAndConnectConsumerTransports(); 
-    await createProducerTransport(); 
-    await getProducers(); 
+    await createAndConnectConsumerTransports();
+    await createProducerTransport();
+    await getProducers();
   }
 
 
@@ -467,26 +488,26 @@ export default function Page() {
         video: true,
         audio: true,
       });
-  
+
       const videoTrack = stream.getVideoTracks()[0];
       const audioTrack = stream.getAudioTracks()[0];
-  
+
       // Store the local stream if needed (for preview)
       if (localStreamRef.current) {
         localStreamRef.current.srcObject = stream;
       }
-  
+
       if (producerTransportRef.current) {
         // Produce video
         const videoProducer = await producerTransportRef.current.produce({
           track: videoTrack,
         });
-  
+
         // Produce audio
         const audioProducer = await producerTransportRef.current.produce({
           track: audioTrack,
         });
-  
+
         // Optionally store both producers
         videoProducerRef.current = videoProducer;
         audioProducerRef.current = audioProducer;
@@ -495,31 +516,127 @@ export default function Page() {
       console.error("Error starting stream:", err);
     }
   };
-  
-  
+
+  const turnMicOn = async () => {
+    if (!isMicOn) {
+      // Turn ON
+      console.log("Mic triggered")
+      if (audioProducerRef.current) {
+        audioProducerRef.current.resume();
+      }
+      setIsMicOn(true);
+    } else {
+      // Turn OFF
+      if (audioProducerRef.current) {
+        audioProducerRef.current.pause();
+      }
+      setIsMicOn(false);
+    }
+  };
+
+  console.log("video on state", isVideoOn);
+  console.log("audio on state", isMicOn);
+
+  const turnVideoOn = async () => {
+    if (!isVideoOn) {
+      // TURN ON
+      try {
+        if (videoProducerRef.current) {
+            const videoProducerId = videoProducerRef.current.id;
+            videoProducerRef.current.resume(); 
+            setPausedVideoProducerIds((prev) => prev.filter((id) => id !== videoProducerId ));
+        }
+        setIsVideoOn(true);
+      } catch (error) {
+        console.log("Video error:", error);
+      }
+    } else {
+      // TURN OFF
+      try {
+
+        if (videoProducerRef.current) {
+          const videoProducerId = videoProducerRef.current.id;
+          videoProducerRef.current.pause();
+          setPausedVideoProducerIds(prev => [...prev, videoProducerId]); // pause instead of close
+        }
+
+        setIsVideoOn(false);
+      } catch (error) {
+        console.log("Video pause error:", error);
+      }
+    }
+  };
+
+
+
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">🎥 Video Calling App</h1>
-  
+    <div className="bg-gradient-to-br from-zinc-900 via-black to-zinc-800 min-h-screen relative p-6">
+      <h1 className="text-3xl font-semibold text-center mb-8 text-white tracking-wide">
+        🎥 Video Calling App
+      </h1>
+
       {/* Local Stream */}
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-2">👤 Local Stream</h2>
-        <div className="border rounded-lg overflow-hidden w-full max-w-md mx-auto">
-          <video ref={localStreamRef} autoPlay playsInline muted className="w-full h-auto bg-black" />
+      <section className="fixed bottom-6 right-6 z-50">
+        <div className="w-60 rounded-xl overflow-hidden shadow-xl backdrop-blur bg-white/5 border border-white/10 relative">
+          <video
+            autoPlay
+            muted
+            playsInline
+            ref={localStreamRef}
+            className="w-full h-full object-contain"
+          />
+
+          {/* Controls */}
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-4">
+            <button
+              onClick={turnMicOn}
+              className="bg-black/30 hover:bg-black/50 text-white p-2 rounded-full"
+            >
+              <Mic></Mic>
+            </button>
+            <button
+              onClick={turnVideoOn}
+              className="bg-black/30 hover:bg-black/50 text-white p-2 rounded-full"
+            >
+              <Video></Video>
+            </button>
+          </div>
         </div>
       </section>
-  
+
       {/* Remote Video Streams */}
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-2">📹 Remote Video Streams</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {remoteStream?.filter(({ kind }) => kind === "video").map(({ stream }, index) => (
-            <div key={index} className="border rounded-lg overflow-hidden bg-white shadow">
+      <div
+        className={`
+          w-full gap-6 px-2 md:px-6 pb-20
+          ${remoteStream.length === 2 ? "grid grid-cols-1" : ""}
+          ${remoteStream.length === 4 ? "flex flex-col md:flex-row" : ""}
+          ${remoteStream.length === 6 ? "flex flex-wrap justify-center" : ""}
+          ${remoteStream.length > 6 ? "grid grid-cols-2 md:grid-cols-2" : ""}
+        `}
+        style={{ height: "100vh", overflow: "auto" }}
+      >
+        {remoteStream
+          .filter(({ kind }) => kind === "video")
+          .map(({ stream }, index) => (
+            <div
+              key={index}
+              className="rounded-xl overflow-hidden bg-white/5 backdrop-blur shadow-lg border border-white/10"
+              style={{
+                maxWidth:
+                  remoteStream.length === 2
+                    ? "100%"
+                    : remoteStream.length === 4
+                      ? "48%"
+                      : remoteStream.length === 6
+                        ? "30%"
+                        : "100%",
+              }}
+            >
               <video
                 autoPlay
                 playsInline
-                className="w-full h-auto"
                 muted
+                className="w-full h-full object-contain aspect-video"
                 ref={(videoElement) => {
                   if (videoElement) {
                     videoElement.srcObject = stream;
@@ -528,25 +645,27 @@ export default function Page() {
               />
             </div>
           ))}
-        </div>
-      </section>
-  
+      </div>
+
       {/* Remote Audio Streams */}
       <section>
-        {remoteStream?.filter(({ kind }) => kind === "audio").map(({ stream }, index) => (
-          <div key={index} className="mb-2">
-            <audio
-              autoPlay
-              ref={(audioElement) => {
-                if (audioElement) {
-                  audioElement.srcObject = stream;
-                }
-              }}
-            />
-          </div>
-        ))}
+        {remoteStream
+          ?.filter(({ kind }) => kind === "audio")
+          .map(({ stream }, index) => (
+            <div key={index} className="hidden">
+              <audio
+                autoPlay
+                ref={(audioElement) => {
+                  if (audioElement) {
+                    audioElement.srcObject = stream;
+                  }
+                }}
+              />
+            </div>
+          ))}
       </section>
     </div>
   );
-  
+
+
 }

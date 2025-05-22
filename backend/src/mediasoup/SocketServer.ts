@@ -268,6 +268,8 @@ export class SocketService {
                   if (room) {
                     room.closeProducer(producer_id, socket.id);
                   }
+
+                  socket.to(socket.roomId!).emit("producer-cleanup" , {producer_id})
                 }
             );
 
