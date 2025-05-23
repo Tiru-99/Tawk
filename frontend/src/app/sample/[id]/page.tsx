@@ -4,12 +4,11 @@ import { io } from "socket.io-client";
 import { Device } from 'mediasoup-client';
 import { useParams } from "next/navigation"
 import { useMemo, useEffect, useState, useRef } from "react";
-import { v4 as uuidv4 } from "uuid";
-import { toast } from "sonner";
+import { Toaster , toast } from "sonner"
 import useAuth from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { RtpCapabilities } from "mediasoup-client/lib/RtpParameters";
-import { LucidePcCase, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { Phone, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { WebSocketEventType } from "@/lib/types";
 import {
   DtlsParameters,
@@ -20,6 +19,7 @@ import {
   Transport,
   Consumer
 } from "mediasoup-client/lib/types";
+
 
 
 //types and interfaces 
@@ -64,7 +64,7 @@ export default function Page() {
   const roomId = useParams();
 
   //refs 
-  const localVideoRef = useRef<MediaStream | null>(null);
+
   const localStreamRef = useRef<HTMLVideoElement | null>(null);
   const audioProducerRef = useRef<Producer | null>(null);
   const videoProducerRef = useRef<Producer | null>(null);
@@ -76,6 +76,7 @@ export default function Page() {
 
   //states 
   const [userId, setUserId] = useState<string>();
+  const [toastMessage , setToastMessage] = useState<string>();
   const [username, setUserName] = useState<string>(); 
   const [rtpCapabilities, setRtpCapabilities] = useState<RtpCapabilities>();
   const [producers, setProducers] = useState<ProducerContainer[]>([]);
@@ -119,8 +120,7 @@ export default function Page() {
 
   }, [])
 
-  console.log("the user id is", userId , username);
-
+  // console.log("the user id is", userId , username);
   useEffect(() => {
     if(isAuthenticated === false || isLoading || !username) {
       console.log("taking some time , " , isAuthenticated , isLoading); 
@@ -206,6 +206,7 @@ export default function Page() {
   },[socket])
 
 
+
   //send request template
   const sendRequest = (eventType: string, data: any): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -278,6 +279,7 @@ export default function Page() {
     const producerIds = args.leavingProducers;
 
     console.log("User who left:", leftUser, producerIds);
+    toast(`${leftUser.name} left the call`);
 
     // Remove that user from the room UI
     setUsersInRoom((v) => v.filter((peer) => peer.id !== leftUser.id));
@@ -296,6 +298,7 @@ export default function Page() {
   const userJoined = (args: any) => {
     const user = args.user as Peer;
     console.log("The user is joined , ", user);
+    toast(`${user.name} has joined the call`)
     setUsersInRoom((v) => [...v, user]);
   };
 
@@ -321,8 +324,10 @@ export default function Page() {
   }
 
   const getCurrentUsers = async () => {
-    const response = await sendRequest(WebSocketEventType.GET_IN_ROOM_USERS, {});
+    const response = await sendRequest(WebSocketEventType.GET_IN_ROOM_USERS , {});
     console.log("The current users are response: " , response);
+    const { users } = response ; 
+    setUsersInRoom(users)
     return response;
   }
 
@@ -598,9 +603,9 @@ export default function Page() {
     }
   };
 
-  console.log("video on state", isVideoOn);
-  console.log("audio on state", isMicOn);
-  console.log("paused Producers" , pausedVideoProducerIds);
+  // console.log("video on state", isVideoOn);
+  // console.log("audio on state", isMicOn);
+  // console.log("paused Producers" , pausedVideoProducerIds);
 
   const turnVideoOn = async () => {
     if (!isVideoOn) {
@@ -646,12 +651,18 @@ export default function Page() {
     return user?.name || "Unknown";
   };
 
+ 
 
   return (
+    <>
+    <Toaster position="bottom-left" richColors />
     <div className="bg-gradient-to-br from-zinc-900 via-black to-zinc-800 min-h-screen relative p-6">
       <h1 className="text-3xl font-semibold text-center mb-8 text-white tracking-wide">
         🎥 Video Calling App
       </h1>
+
+      {/* Hidden audio element */}
+    
 
       {/* Local Stream */}
       <section className="fixed bottom-6 right-6 z-50">
@@ -663,26 +674,25 @@ export default function Page() {
             ref={localStreamRef}
             className="w-full h-full object-contain"
           />
+          {!isVideoOn && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full bg-gray-700 text-white flex items-center justify-center text-4xl font-semibold">
+                {username?.[0]?.toUpperCase() || "?"}
+              </div>
+            </div>
+          )}
 
           {/* Controls */}
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-4">
-            <button
-              onClick={turnMicOn}
-              className="bg-black/30 hover:bg-black/50 text-white p-2 rounded-full"
-            >
-              <Mic></Mic>
-            </button>
-            <button
-              onClick={turnVideoOn}
-              className="bg-black/30 hover:bg-black/50 text-white p-2 rounded-full"
-            >
-              <Video></Video>
-            </button>
+          {!isMicOn && (<div className="absolute top-2 right-2 text-white">
+            <MicOff></MicOff>
+          </div>)}
+
+          <div className="absolute bottom-2 left-2 text-white bg-black/50 px-2 rounded-sm ">
+            {username} (You)
           </div>
         </div>
       </section>
 
-      {/* Remote Video Streams */}
       <div
   className={`
     w-full gap-6 px-2 md:px-6 pb-20
@@ -693,54 +703,105 @@ export default function Page() {
   `}
   style={{ height: "100vh", overflow: "auto" }}
 >
-  {remoteStream
-    .filter(({ kind }) => kind === "video")
-    .map(({ stream, producerId }, index) => {
-      const userName = getUserNameByProducerId(producerId);
-      return (
-        <div
-          key={index}
-          className="relative rounded-xl overflow-hidden bg-white/5 backdrop-blur shadow-lg border border-white/10"
-          style={{
-            maxWidth:
-              remoteStream.length === 2
-                ? "100%"
-                : remoteStream.length === 4
-                ? "48%"
-                : remoteStream.length === 6
-                ? "30%"
-                : "100%",
-          }}
-        >
-          {/* Video or Paused screen */}
-          {!pausedVideoProducerIds.includes(producerId) ? (
-            <video
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-contain aspect-video"
-              ref={(videoElement) => {
-                if (videoElement) {
-                  videoElement.srcObject = stream;
-                }
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-black text-white">
-              <img
-                src={"/default.jpg"}
-                alt={`${userName}'s avatar`}
-                className="w-16 h-16 rounded-full mb-2"
+  {remoteStream.length === 0 ? (
+   <div className="w-full h-full flex flex-col items-center justify-center text-white text-xl bg-black/50 rounded-xl space-y-4">
+      {/* Pulsing dot */}
+    
+      {/* Ringing text animation */}
+      <div className="flex items-center space-x-1 font-semibold text-2xl">
+        <span>Ringing</span>
+        <span className="animate-bounce [animation-delay:0s]">.</span>
+        <span className="animate-bounce [animation-delay:0.2s]">.</span>
+        < span className="animate-bounce [animation-delay:0.4s]">.</span>
+      </div>
+    </div>
+  
+  ) : (
+    remoteStream
+      .filter(({ kind }) => kind === "video")
+      .map(({ stream, producerId }, index) => {
+        const userName = getUserNameByProducerId(producerId);
+        const userInitial = userName?.[0]?.toUpperCase() || "?";
+        return (
+          <div
+            key={index}
+            className="relative rounded-xl overflow-hidden bg-white/5 backdrop-blur shadow-lg border border-white/10"
+            style={{
+              maxWidth:
+                remoteStream.length === 2
+                  ? "100%"
+                  : remoteStream.length === 4
+                    ? "48%"
+                    : remoteStream.length === 6
+                      ? "30%"
+                      : "100%",
+            }}
+          >
+            {!pausedVideoProducerIds.includes(producerId) ? (
+              <video
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-contain aspect-video"
+                ref={(videoElement) => {
+                  if (videoElement) {
+                    videoElement.srcObject = stream;
+                  }
+                }}
               />
-              <span className="text-lg font-medium">{userName}</span>
-            </div>
-          )}
+            ) : (
+              <div className="w-full h-full aspect-video flex flex-col items-center justify-center bg-black text-white">
+                <div className="w-24 h-24 flex items-center justify-center rounded-full bg-gray-700 mb-2 text-4xl font-semibold">
+                  {userInitial}
+                </div>
+              </div>
+            )}
 
-          {/* Name overlay in bottom-left */}
-        </div>
-      );
-    })}
+            <div className="absolute bottom-2 left-2 md:text-lg bg-black/60 text-white text-sm px-2 py-1 rounded-md">
+              {userName}
+            </div>
+          </div>
+        );
+      })
+  )}
 </div>
+
+{/* Sticky End Call Button */}
+<div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 bg-black/70 p-4 rounded-full shadow-lg backdrop-blur-md border border-white/10">
+  {/* Mic Toggle */}
+  <button
+    onClick={turnMicOn}
+    className={`transition-all duration-300 ease-in-out hover:-translate-y-1 p-3 rounded-full ${
+      isMicOn ? "bg-white text-black hover:bg-gray-200" : "bg-gray-800 text-white hover:bg-gray-700"
+    }`}
+    title="Toggle Mic"
+  >
+    {isMicOn ? <Mic size={20} /> : <MicOff size={20} />}
+  </button>
+
+    {/* End Call */}
+    <button
+    // onClick={handleEndCall}
+    className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-all duration-300 hover:-translate-y-1 ease-in-out"
+    title="End Call"
+  >
+    <Phone size={20} />
+  </button>
+
+  {/* Video Toggle */}
+  <button
+    onClick={turnVideoOn}
+    className={`transition-all duration-300 ease-in-out p-3 hover:-translate-y-1  rounded-full ${
+      isVideoOn ? "bg-white text-black hover:bg-gray-200" : "bg-gray-800 text-white hover:bg-gray-700"
+    }`}
+    title="Toggle Video"
+  >
+    {isVideoOn ? <Video size={20} /> : <VideoOff size={20} />}
+  </button>
+
+</div>
+
+
 
 
       {/* Remote Audio Streams */}
@@ -761,6 +822,7 @@ export default function Page() {
           ))}
       </section>
     </div>
+    </>
   );
 
 
