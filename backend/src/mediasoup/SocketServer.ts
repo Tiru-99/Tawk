@@ -24,16 +24,11 @@ export class SocketService {
     private _io: io.Server;
     private _roomList: Map<string, Room>;
   
-    constructor(server: http.Server) {
+    constructor(ioServer: io.Server) {
       console.log("Initializing socket server");
-  
-      this._io = new io.Server(server, {
-        cors: {
-          origin: process.env.FRONTEND_URL,
-          credentials : true
-        }
-      });
+      this._io = ioServer;  // use the passed io instance directly
       this._roomList = new Map();
+  
       try {
         this.listenToWebSockets(this._io);
       } catch (error) {
@@ -95,11 +90,16 @@ export class SocketService {
             
               const peer = room.createPeer(name, userId);
               socket.roomId = roomId;
+
+              const peerData = {
+                name : peer?.name , 
+                userId : peer?.id
+              }
             
               socket.join(roomId);
               socket.to(roomId).emit(WebSocketEventType.USER_JOINED, {
                 message: `${name} joined the room`,
-                user: peer,
+                user: peerData,
               });
             
               console.log("Room joined successfully", { name, roomId });

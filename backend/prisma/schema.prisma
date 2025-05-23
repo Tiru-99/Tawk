@@ -59,4 +59,5 @@ model ChatModelUsers {
 enum MessageType {
   IMAGE
   TEXT
+  CALL
 }

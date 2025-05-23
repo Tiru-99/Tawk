@@ -26,8 +26,8 @@ const io = new Server(server, {
   },
 });
 
-console.log(process.env.FRONTEND_URL);
-new SocketService(server); 
+
+new SocketService(io); 
 setupSocketIOServer(io);
 // setUpMediaSoupServer(io);
 

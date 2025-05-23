@@ -192,6 +192,53 @@ export const setupSocketIOServer = (io : Server) => {
             socket.emit("error", { message: "Internal server error" });
           }
         });
+
+        socket.on("video-call-message" , async (data) => {
+          const {senderId , content , chatId , type} = data; 
+
+          if(!senderId || !content || !chatId || !type){
+            console.log("Missing data in video call" , senderId , content , chatId , type );
+            return socket.emit("error", { message: "Incomplete data in video call" });
+          }
+
+         try {
+           const senderDetails = await prisma.user.findUnique({
+             where: { id: senderId },
+             select: { id: true, username: true, profile_pic: true }, // only required fields
+           });
+ 
+           if (!senderDetails) {
+             return socket.emit("error", { message: "Sender not found" });
+           }
+
+           const enrichedMessage = {
+            id : uuidv4(),
+            content,
+            chatId,
+            // timestamp: new Date().toISOString(),
+            type , 
+            senderId: senderDetails.id,
+            user: {
+              userId: senderDetails.id,
+              username: senderDetails.username,
+              profile_pic: senderDetails.profile_pic,
+            },
+          };
+
+          console.log("the enriched message" , enrichedMessage);
+
+          //Publishing to redis 
+          pubClient.publish(chatId , JSON.stringify(enrichedMessage));
+
+          //send message to kafka consumer 
+          await produceMessage(JSON.stringify(enrichedMessage));
+          console.log("Message published to Redis" + chatId);
+         } catch (error) {
+            console.error("Error in send-message video call:", error);
+            socket.emit("error", { message: "Internal server error" });
+         }
+      
+        })
         
 
         socket.on("disconnect" , ()=> {

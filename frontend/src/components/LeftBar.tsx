@@ -34,10 +34,12 @@ export default function LeftBar({ selectedChat, setSelectedChat }: LeftBarProps)
   const socket = useMemo(
     () =>
       io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {
-        withCredentials: true,
+        withCredentials: true
       }),
     [],
   )
+  console.log("Connecting to socket at:", process.env.NEXT_PUBLIC_BACKEND_URL);
+
   console.log("localstorage id ", localStorage.userId)
   const [chats, setChats] = useState<ChatsType[]>([])
   const [chat, setChat] = useState()
