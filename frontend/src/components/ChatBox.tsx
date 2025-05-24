@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useEffect, useState, useMemo, useRef } from "react"
-import { Phone, Video, MoreVertical, Check, Smile, Send, Paperclip, Clock , Menu} from "lucide-react"
+import { Phone, Video, MoreVertical, Check, Smile, Send, Paperclip, Clock, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -35,7 +35,7 @@ interface MessageProps {
   senderId: string
   chatId: string
   user: MessageUserProps
-  type : MessageType
+  type: MessageType
 }
 
 interface MessageUserProps {
@@ -70,7 +70,7 @@ type ChatBoxProps = {
 }
 
 export default function ChatBox({ selectedChat }: ChatBoxProps) {
-  const router = useRouter(); 
+  const router = useRouter();
   const [messages, setMessages] = useState<MessageProps[]>([])
   const [message, setMessage] = useState<string>("")
   const [chatDetails, setChatDetails] = useState<ChatDetailsProps>()
@@ -236,20 +236,20 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
-  const handleVideoCall = async() => {
-    const userId = localStorage.getItem("userId"); 
-    if(!userId){
+  const handleVideoCall = async () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
       console.log("No user id found");
-      return; 
+      return;
     }
     const messageData = {
-      senderId : userId  , 
-      content : "video-call" , 
-      chatId : selectedChat , 
-      type : "CALL" , 
+      senderId: userId,
+      content: "video-call",
+      chatId: selectedChat,
+      type: "CALL",
     }
-
-    socket.emit("video-call-message"  , messageData);
+    socket.emit("video-call-message", messageData);
+    router.push(`/sample/${selectedChat}`)
   }
 
   return (
@@ -259,17 +259,17 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
           {/* Header */}
           <header className="flex items-center justify-between border-b px-6 py-4 bg-white shadow-sm">
             <div className="flex items-center gap-4">
-            <span className="block md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </span>
+              <span className="block md:hidden">
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </span>
               <div className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm">
                 <Image
                   src={
                     !chatDetails?.isGroup
                       ? (chatDetails?.users.find((u) => u.user.id !== localStorage.getItem("userId"))?.user
-                          .profile_pic ?? "/default-avatar.png")
+                        .profile_pic ?? "/default-avatar.png")
                       : "/default-avatar.png"
                   }
                   alt="profile picture"
@@ -287,7 +287,7 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100"
-              onClick ={handleVideoCall}>
+                onClick={handleVideoCall}>
                 <Video className="h-5 w-5 text-gray-600" />
               </Button>
               <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100">
@@ -308,109 +308,104 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
             </div>
 
             <div className="space-y-8">
-  {messages.length > 0 &&
-    messages.map((message, index) => (
-      <div
-        key={message.id}
-        className={`flex gap-4 ${
-          message.senderId === localStorage.getItem("userId")
-            ? "flex-row-reverse"
-            : "flex-row"
-        }`}
-        ref={index === messages.length - 1 ? lastMessageRef : null}
-      >
-        {/* Avatar */}
-        <div
-          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 shrink-0 ${
-            message.senderId === localStorage.getItem("userId")
-              ? "order-2"
-              : "order-1"
-          }`}
-        >
-          <Image
-            src={message.user?.profile_pic || "/default-avatar.png"}
-            alt={`${message.user?.username || "User"}'s avatar`}
-            className="object-cover w-full h-full"
-            width={40}
-            height={40}
-          />
-        </div>
+              {messages.length > 0 &&
+                messages.map((message, index) => (
+                  <div
+                    key={message.id}
+                    className={`flex gap-4 ${message.senderId === localStorage.getItem("userId")
+                        ? "flex-row-reverse"
+                        : "flex-row"
+                      }`}
+                    ref={index === messages.length - 1 ? lastMessageRef : null}
+                  >
+                    {/* Avatar */}
+                    <div
+                      className={`relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 shrink-0 ${message.senderId === localStorage.getItem("userId")
+                          ? "order-2"
+                          : "order-1"
+                        }`}
+                    >
+                      <Image
+                        src={message.user?.profile_pic || "/default-avatar.png"}
+                        alt={`${message.user?.username || "User"}'s avatar`}
+                        className="object-cover w-full h-full"
+                        width={40}
+                        height={40}
+                      />
+                    </div>
 
-        {/* Message Content */}
-        <div
-          className={`max-w-[70%] ${
-            message.senderId === localStorage.getItem("userId")
-              ? "order-1"
-              : "order-2"
-          }`}
-        >
-          {/* User info and time */}
-          <div
-            className={`flex items-center gap-2 mb-1 ${
-              message.senderId === localStorage.getItem("userId")
-                ? "justify-end"
-                : "justify-start"
-            }`}
-          >
-            <span className="text-sm font-medium text-gray-700">
-              {message.senderId === localStorage.getItem("userId")
-                ? "You"
-                : message.user?.username || "Unknown"}
-            </span>
-            <span className="text-xs text-gray-500 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {formatTime(message.createdAt)}
-            </span>
-            {message.senderId === localStorage.getItem("userId") && (
-              <Check className="h-4 w-4 text-green-500" />
-            )}
-          </div>
+                    {/* Message Content */}
+                    <div
+                      className={`max-w-[70%] ${message.senderId === localStorage.getItem("userId")
+                          ? "order-1"
+                          : "order-2"
+                        }`}
+                    >
+                      {/* User info and time */}
+                      <div
+                        className={`flex items-center gap-2 mb-1 ${message.senderId === localStorage.getItem("userId")
+                            ? "justify-end"
+                            : "justify-start"
+                          }`}
+                      >
+                        <span className="text-sm font-medium text-gray-700">
+                          {message.senderId === localStorage.getItem("userId")
+                            ? "You"
+                            : message.user?.username || "Unknown"}
+                        </span>
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatTime(message.createdAt)}
+                        </span>
+                        {message.senderId === localStorage.getItem("userId") && (
+                          <Check className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
 
-          {/* Message Body */}
-          {message.type === "CALL" ? (
-            <div
-              className="p-3 border border-blue-200 bg-blue-50 rounded-xl text-sm text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-100 transition"
-              onClick={() => {
-                // const userId = localStorage.getItem("userId");
-                // const username = localStorage.getItem("username");
-                // const profilePic = localStorage.getItem("profile_pic");
-               router.push(`/sample/${selectedChat}`)
-              }}
-            >
-              <Video className="w-4 h-4" />
-              <span>Video Call</span>
+                      {/* Message Body */}
+                      {message.type === "CALL" ? (
+                        <div
+                          className="p-3 border border-blue-200 bg-blue-50 rounded-xl text-sm text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-100 transition"
+                          onClick={() => {
+                            // const userId = localStorage.getItem("userId");
+                            // const username = localStorage.getItem("username");
+                            // const profilePic = localStorage.getItem("profile_pic");
+                            router.push(`/sample/${selectedChat}`)
+                          }}
+                        >
+                          <Video className="w-4 h-4" />
+                          <span>Video Call</span>
+                        </div>
+                      ) : (
+                        <div
+                          className={`rounded-2xl px-4 py-3 shadow-sm ${message.imageUrl && !message.content
+                              ? "bg-transparent p-0"
+                              : message.senderId === localStorage.getItem("userId")
+                                ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
+                                : "bg-white border border-gray-100 text-gray-800"
+                            }`}
+                        >
+                          {/* Image */}
+                          {message.imageUrl && (
+                            <div className="mb-2 rounded-lg overflow-hidden">
+                              <img
+                                src={message.imageUrl}
+                                alt="sent media"
+                                className="w-full max-h-60 object-cover rounded-lg"
+                              />
+                            </div>
+                          )}
+
+                          {/* Text */}
+                          {message.content && (
+                            <p className="leading-relaxed">{message.content}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
             </div>
-          ) : (
-            <div
-              className={`rounded-2xl px-4 py-3 shadow-sm ${
-                message.imageUrl && !message.content
-                  ? "bg-transparent p-0"
-                  : message.senderId === localStorage.getItem("userId")
-                  ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
-                  : "bg-white border border-gray-100 text-gray-800"
-              }`}
-            >
-              {/* Image */}
-              {message.imageUrl && (
-                <div className="mb-2 rounded-lg overflow-hidden">
-                  <img
-                    src={message.imageUrl}
-                    alt="sent media"
-                    className="w-full max-h-60 object-cover rounded-lg"
-                  />
-                </div>
-              )}
-
-              {/* Text */}
-              {message.content && (
-                <p className="leading-relaxed">{message.content}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    ))}
-</div>
 
 
           </div>
