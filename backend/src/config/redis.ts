@@ -6,13 +6,12 @@ dotenv.config({
 });
 //pub sub intialization
 export const pubClient = createClient({
-    username: 'default',
-    password: process.env.REDIS_PASSWORD,
     socket: {
-        host: process.env.REDIS_HOST,
-        port: 10307
-    }
-});
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+    },
+  });
+  
 
 export const subClient = pubClient.duplicate(); 
 

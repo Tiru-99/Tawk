@@ -9,14 +9,8 @@ dotenv.config({
 })
 
 const kafka = new Kafka({
-  clientId: "chat-kafka",
-  brokers: [`${process.env.KAFKA_BROKER}`],
-  ssl: {
-    rejectUnauthorized: true,
-    ca: [fs.readFileSync(path.resolve("./ca.pem"), "utf-8")],
-    cert: fs.readFileSync(path.resolve("./service.cert"), "utf-8"),
-    key: fs.readFileSync(path.resolve("./service.key"), "utf-8"),
-  },
+  clientId: 'chat-kafka',
+  brokers: [process.env.KAFKA_BROKER!], // no SSL
 });
 
 
