@@ -8,7 +8,7 @@ import { PeopleSheet } from "./SearchSheet"
 import { CreateGroupDialog } from "./CreateGroupDialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
 import { io } from "socket.io-client"
-import { Menu } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 interface ChatsType {
   id: string
@@ -43,6 +43,7 @@ export default function LeftBar({ selectedChat, setSelectedChat }: LeftBarProps)
   console.log("localstorage id ", localStorage.userId)
   const [chats, setChats] = useState<ChatsType[]>([])
   const [chat, setChat] = useState()
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [otherUserDetails, setOtherUserDetails] = useState({
     userId: "",
     username: "",
@@ -53,11 +54,14 @@ export default function LeftBar({ selectedChat, setSelectedChat }: LeftBarProps)
 
   useEffect(() => {
     const loggedInUser = localStorage.userId
+
+    setIsLoading(true);
     socket.emit("get-chats", loggedInUser)
     console.log(loggedInUser)
 
     socket.on("get-all-chats", (chats: ChatsType[]) => {
-      setChats(chats)
+      setChats(chats);
+      setIsLoading(false);
     })
 
     socket.on("new-chat-added", (newChat) => {
@@ -164,7 +168,7 @@ export default function LeftBar({ selectedChat, setSelectedChat }: LeftBarProps)
 
           {/* Search Icon */}
           <div className="flex items-center gap-3">
-            <PeopleSheet socket={socket} sendChatToParent={()=>handleNewChat}></PeopleSheet>
+            <PeopleSheet socket={socket} sendChatToParent={() => handleNewChat}></PeopleSheet>
             <CreateGroupDialog setFetchAgain={setFetchAgain}></CreateGroupDialog>
           </div>
         </div>
@@ -174,56 +178,69 @@ export default function LeftBar({ selectedChat, setSelectedChat }: LeftBarProps)
         </div>
 
         {/* Chats and Latest Message Section */}
+        {/* Chats and Latest Message Section */}
         <div className="mt-2 flex-1 overflow-y-auto pr-1">
           <p className="text-xs font-medium uppercase text-gray-500 mb-3 tracking-wider">Messages</p>
-          <div className="space-y-2">
-            {chats.map((chat, index) => (
-              <div
-                key={index}
-                className={`flex justify-between items-center p-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                  selectedChat === chat.id
-                    ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-sm"
-                    : "hover:bg-gray-50"
-                }`}
-                onClick={() => setSelectedChat(chat.id)}
-              >
-                <div className="flex items-center gap-3">
+
+          {isLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="animate-spin w-6 h-6 text-gray-500" />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {chats.map((chat, index) => (
+                <div
+                  key={index}
+                  className={`flex justify-between items-center p-3 rounded-xl transition-all duration-200 cursor-pointer ${selectedChat === chat.id
+                      ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-sm"
+                      : "hover:bg-gray-50"
+                    }`}
+                  onClick={() => setSelectedChat(chat.id)}
+                >
                   {/* Avatar */}
-                  <div className="w-12 h-12 flex items-center justify-center rounded-full overflow-hidden border border-gray-200 shadow-sm">
-                    {getOtherProfilePic(chat) ? (
-                      <img className="w-full h-full object-cover" src={`${getOtherProfilePic(chat)}`} alt="Profile" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-semibold">
-                        {getOtherUserName(chat)?.toString().slice(0, 2).toUpperCase() || "BC"}
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 flex items-center justify-center rounded-full overflow-hidden border border-gray-200 shadow-sm">
+                      {getOtherProfilePic(chat) ? (
+                        <img
+                          className="w-full h-full object-cover"
+                          src={`${getOtherProfilePic(chat)}`}
+                          alt="Profile"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-semibold">
+                          {getOtherUserName(chat)?.toString().slice(0, 2).toUpperCase() || "BC"}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Chat Info */}
+                    <div className="flex flex-col">
+                      <h2 className="text-sm font-medium tracking-tight">{getOtherUserName(chat)}</h2>
+                      <p className="text-xs text-gray-500 line-clamp-1">
+                        {chat.latestMessage && chat.latestMessage.length > 25
+                          ? chat.latestMessage?.slice(0, 25) + "..."
+                          : chat.latestMessage}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Time */}
+                  <div className="flex flex-col items-end">
+                    <p className="text-xs font-medium text-gray-500">
+                      {convertTimeToReadableFormat(chat.createdAt)}
+                    </p>
+                    {index % 3 === 0 && (
+                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full mt-1">
+                        {Math.floor(Math.random() * 5) + 1}
+                      </span>
                     )}
                   </div>
-
-                  {/* Chat Info */}
-                  <div className="flex flex-col">
-                    <h2 className="text-sm font-medium tracking-tight">{getOtherUserName(chat)}</h2>
-                    <p className="text-xs text-gray-500 line-clamp-1">
-                      {chat.latestMessage && chat.latestMessage.length > 25
-                        ? chat.latestMessage?.slice(0, 25) + "..."
-                        : chat.latestMessage}
-                    </p>
-                  </div>
                 </div>
-
-                {/* Time */}
-                <div className="flex flex-col items-end">
-                  <p className="text-xs font-medium text-gray-500">{convertTimeToReadableFormat(chat.createdAt)}</p>
-                  {/* You can add an unread message indicator here */}
-                  {index % 3 === 0 && (
-                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full mt-1">
-                      {Math.floor(Math.random() * 5) + 1}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
+
       </div>
     </>
   )

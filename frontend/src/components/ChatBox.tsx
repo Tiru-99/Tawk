@@ -9,6 +9,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import axios from "axios"
 import { io } from "socket.io-client"
+import { Loader2 } from "lucide-react"
 
 interface Message {
   id: number
@@ -77,6 +78,7 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
   const lastMessageRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [file, setFile] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleClick = () => {
     fileInputRef.current?.click()
@@ -117,7 +119,7 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
 
   useEffect(() => {
     if (!selectedChat) return
-
+    setIsLoading(true);
     console.log("Selected Chat", selectedChat)
 
     socket.emit("join-chat", selectedChat)
@@ -129,9 +131,11 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
         setMessages(res.data.data)
         setChatDetails(res.data.chatDetails)
         console.log("Fetched messages: ", res.data.data)
+        setIsLoading(false);
       })
       .catch((error) => {
         console.log("Error fetching messages: ", error)
+        setIsLoading(false);
       })
 
     // Handle incoming messages
@@ -254,6 +258,7 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
 
   return (
     <>
+
       {selectedChat ? (
         <div className="flex h-screen flex-col bg-gradient-to-b from-gray-50 to-white relative">
           {/* Header */}
@@ -300,7 +305,12 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
           </header>
 
           {/* Chat Area */}
-          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {isLoading && (
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="animate-spin w-6 h-6 text-gray-500" />
+            </div>
+          )}
+          {!isLoading && <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             <div className="text-center mb-6">
               <span className="inline-block rounded-full bg-gray-200 px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm">
                 Today
@@ -313,16 +323,16 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
                   <div
                     key={message.id}
                     className={`flex gap-4 ${message.senderId === localStorage.getItem("userId")
-                        ? "flex-row-reverse"
-                        : "flex-row"
+                      ? "flex-row-reverse"
+                      : "flex-row"
                       }`}
                     ref={index === messages.length - 1 ? lastMessageRef : null}
                   >
                     {/* Avatar */}
                     <div
                       className={`relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 shrink-0 ${message.senderId === localStorage.getItem("userId")
-                          ? "order-2"
-                          : "order-1"
+                        ? "order-2"
+                        : "order-1"
                         }`}
                     >
                       <Image
@@ -337,15 +347,15 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
                     {/* Message Content */}
                     <div
                       className={`max-w-[70%] ${message.senderId === localStorage.getItem("userId")
-                          ? "order-1"
-                          : "order-2"
+                        ? "order-1"
+                        : "order-2"
                         }`}
                     >
                       {/* User info and time */}
                       <div
                         className={`flex items-center gap-2 mb-1 ${message.senderId === localStorage.getItem("userId")
-                            ? "justify-end"
-                            : "justify-start"
+                          ? "justify-end"
+                          : "justify-start"
                           }`}
                       >
                         <span className="text-sm font-medium text-gray-700">
@@ -379,10 +389,10 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
                       ) : (
                         <div
                           className={`rounded-2xl px-4 py-3 shadow-sm ${message.imageUrl && !message.content
-                              ? "bg-transparent p-0"
-                              : message.senderId === localStorage.getItem("userId")
-                                ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
-                                : "bg-white border border-gray-100 text-gray-800"
+                            ? "bg-transparent p-0"
+                            : message.senderId === localStorage.getItem("userId")
+                              ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
+                              : "bg-white border border-gray-100 text-gray-800"
                             }`}
                         >
                           {/* Image */}
@@ -408,7 +418,7 @@ export default function ChatBox({ selectedChat }: ChatBoxProps) {
             </div>
 
 
-          </div>
+          </div>}
 
           {/* Image preview */}
           {file && (
