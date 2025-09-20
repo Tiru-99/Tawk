@@ -152,11 +152,14 @@ export const getChats = async (req: Request, res: Response) => {
             name: true,
           },
         },
+        messages : true
       },
       orderBy: {
         latestMessageCreatedAt: 'desc',
       },
     });
+
+    
 
     const simplifiedChats = chats.map((chat) => {
       // Get current user's participant data for unseen count
@@ -164,17 +167,25 @@ export const getChats = async (req: Request, res: Response) => {
         (participant) => participant.userId === id
       );
 
+      //for single 1v1 chat find the other participant's name
+      let otherParticipant ;  
+      if(chat.isGroupChat === false){
+        otherParticipant = chat.participants.find((p) => p.id !== id )
+      }
+
       return {
         id: chat.id,
-        name: chat.name,
+        name: chat.name ?? otherParticipant?.user.name,
         isGroupChat: chat.isGroupChat,
         latestMessage: chat.latestMessage,
         latestMessageCreatedAt: chat.latestMessageCreatedAt,
         unseenCount: currentUserParticipant?.unseenCount || 0,
+        chatMessages : chat.messages, 
         admin: chat.admin ? {
           id: chat.admin.id,
           name: chat.admin.name,
         } : null,
+        otherImageUrl : otherParticipant?.user.imageUrl,
         participants: chat.participants.map((participant) => ({
           userId: participant.user.id,
           name: participant.user.name,
@@ -186,7 +197,7 @@ export const getChats = async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Chats fetched successfully",
-      data: simplifiedChats,
+      chats: simplifiedChats,
     });
   } catch (error) {
     console.log("This is my error", error);

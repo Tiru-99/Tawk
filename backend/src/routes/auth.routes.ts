@@ -6,8 +6,8 @@ const router = Router();
 
 router.route("/signup").post(handleSignUp);
 router.route("/login").post(loginHandler);
-router.route("/getusers/:id").get(verfiyJWT , getAllUsers);
-router.route("/getAllUsers/:id").get(verfiyJWT , getUsers);
+router.route("/getusers/:id").get(verfiyJWT , getUsers);
+router.route("/getAllUsers/:id").get(verfiyJWT , getAllUsers);
 router.route("/checkauth").get(checkAuth);
 router.route("/logout").get(logout);
 

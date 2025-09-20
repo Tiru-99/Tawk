@@ -53,7 +53,7 @@ export const startMessageConsumer = async () => {
 
        try {
         // kafka logic here will be doing it afterwards 
-         await prisma.messages.create({
+         const message = await prisma.messages.create({
              data :{
                  content, 
                  chatId, 
@@ -62,6 +62,28 @@ export const startMessageConsumer = async () => {
                  type 
              }
          });
+
+         let latestMessage 
+         if(message.type === "MEDIA"){
+            latestMessage = "attachment"
+         } 
+         if(message.type === "CALL"){
+            latestMessage = "video call"
+         }
+         if(message.type === "TEXT"){
+            latestMessage = message.content
+         }
+
+         await prisma.chat.update({
+            where : {
+                id : chatId
+            } , 
+            data : {
+                latestMessage : latestMessage! ,
+                latestMessageCreatedAt : message.createdAt
+            }
+         });
+         
          console.log("Less go message saved to db !!");
        } catch (error) {
         console.log("Something went wrong while saving the message to the db");

@@ -151,7 +151,8 @@ export const logout = (req: Request, res: Response) => {
 };
 
 export const getAllUsers = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const { id } = req.params;  
+  console.log("The request is coming into backend" , id);
 
   try {
     const users = await prisma.user.findMany({
@@ -165,6 +166,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         imageUrl: true
       }
     });
+    console.log("the users are " , users); 
 
     // Get chats where the user is a participant (individual chats only)
     const userChats = await prisma.chat.findMany({
@@ -194,10 +196,10 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
     // Filter out users who already have individual chats with the logged-in user
     const filteredUsers = users.filter(user => !usersWithExistingChats.includes(user.id));
-
+    console.log("the filtered users are " , filteredUsers); 
     res.status(200).json({
       message: "Users Fetched Successfully",
-      data: filteredUsers
+      users: filteredUsers
     });
   } catch (error) {
     console.log("Something went wrong while fetching the users list", error);
@@ -223,10 +225,11 @@ export const getUsers = async (req: Request, res: Response) => {
         email: true,
       },
     });
+ 
 
     res.status(200).json({
       message: "Users fetched successfully",
-      data: users
+      users
     });
   } catch (error) {
     console.log("Something went wrong while getting users", error);
