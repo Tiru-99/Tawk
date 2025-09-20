@@ -55,8 +55,18 @@ app.get('/' , (req, res)=>{
     res.send("hello world this is aayush tirmanwar");
 })
 
+//api routes
+import authRoute from './routes/auth.routes';
+import chatRoute from './routes/chat.routes';
+import messageRoute from './routes/message.routes';
+import imageUploadRoute from './routes/imageUpload.routes'
 
 
-app.listen(PORT , ()=>{
+app.use("/api/v1/user" , authRoute);
+app.use("/api/v1/chat" , chatRoute );
+app.use("/api/v1/message" , messageRoute);
+app.use("/api/v1/upload" , imageUploadRoute);
+
+server.listen(PORT , ()=>{
     console.log(`The server is up and running on PORT ${PORT}`);
 })

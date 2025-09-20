@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken';
-import { Chat } from "../generated/prisma";
 
 export const handleSignUp = async (req: Request, res: Response) => {
   const { email, password, name, imageUrl } = req.body;
@@ -98,8 +97,9 @@ export const checkAuth = async (req: Request, res: Response) => {
   const token = req.cookies.jwtToken;
 
   if (!token) {
-    return res.status(401).json({
-      message: "Unauthorized User"
+    return res.status(200).json({
+      message: "Unauthorized User",
+      authenticated: false
     });
   }
 
@@ -108,11 +108,44 @@ export const checkAuth = async (req: Request, res: Response) => {
     res.status(200).json({
       message: "Authenticated",
       token: decodedToken,
+      authenticated: true
     });
   } catch (error) {
     console.log("Something went wrong", error);
     res.status(401).json({
-      message: "Unauthorized"
+      message: "Unauthorized",
+      authenticated: false
+    });
+  }
+};
+
+export const logout = (req: Request, res: Response) => {
+  const token = req.cookies.jwtToken;
+
+  if (!token) {
+    return res.status(401).json({
+      message: "No sign in, no logout",
+    });
+  }
+
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET!);
+
+    if (decodedToken) {
+      // clear the cookie
+      res.clearCookie("jwtToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // only send cookie over https in production
+        sameSite: "strict",
+      });
+
+      return res.status(200).json({
+        message: "Logged out successfully",
+      });
+    }
+  } catch (error) {
+    return res.status(401).json({
+      message: "Invalid token",
     });
   }
 };
@@ -190,7 +223,7 @@ export const getUsers = async (req: Request, res: Response) => {
         email: true,
       },
     });
-    
+
     res.status(200).json({
       message: "Users fetched successfully",
       data: users
