@@ -14,9 +14,10 @@ export const SocketIoServer = ( io : Server)  => {
 
         socket.on(ChatSocketType.SEND_MESSAGE , ( messageData  : any) => {
             const { chatId } = messageData ; 
+            console.log("Coming in send message backend"); 
             //produce in the kafka queue
             produceMessage(JSON.stringify(messageData)); 
-            io.to(chatId).emit(ChatSocketType.NEW_MESSAGE, messageData);
+            io.to(chatId).emit("new-message", messageData);
         })
     })
 }

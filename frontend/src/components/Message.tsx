@@ -16,12 +16,9 @@ import { Button } from "@/components/ui/button";
 //goal check if the message is isOwn , and sepearte the message with the text , media message and call message bubble
 
 export const Message = ({ message }: any) => {
-    console.log("The message is " , message); 
     // Safe localStorage access (only in browser)
     const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
     const isOwn = userId === message?.authorId;
-
-    console.log("the message is " , message); 
 
     return (
         <>

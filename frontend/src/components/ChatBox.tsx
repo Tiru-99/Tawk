@@ -39,6 +39,16 @@ export const ChatBox = () => {
         const { chatId } = selectedChat
         socket.emit("join-chat", chatId);
         console.log("Chat joined successfully")
+
+        const messageHandler = ( messageData : any ) => {
+            console.log("Message received on the frontend")
+        }   
+        //listen for new messages 
+        socket.on("new-message" , messageHandler)
+
+        return () => {
+            socket.off("new-message" , messageHandler); 
+        }
     }, [socket, selectedChat]);
 
 
@@ -112,7 +122,7 @@ export const ChatBox = () => {
     return (
         <>
             {/* Header */}
-            <div className="h-full border border-gray-300 rounded-md relative">
+            <div className="flex flex-col h-full border border-gray-300 rounded-md relative">
                 <div className="flex justify-between p-3 border-b border-gray-300">
                     <div className="flex gap-3 items-center">
                         <div className="h-12 w-12 relative rounded-full">
@@ -133,7 +143,7 @@ export const ChatBox = () => {
                     </div>
                 </div>
                 {/* //Chat Section will be here */}
-                <div className="px-4">
+                <div className="px-4 flex-1 pb-3 overflow-y-auto">
                     {selectedChat && selectedChat.chatMessages.map((message : any, index : any) => (
                         <Message message = {message} key = {index}  />
                     ))}
@@ -169,7 +179,7 @@ export const ChatBox = () => {
                 )}
 
                 {/* ChatBox Component */}
-                <div className="absolute bottom-1 inset-x-0 border-t border-gray-300">
+                <div className=" border-t border-gray-300">
                     <div className="flex p-4 gap-2">
                         <div className="relative w-full">
                             <Input
