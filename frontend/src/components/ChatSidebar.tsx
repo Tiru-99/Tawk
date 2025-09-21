@@ -4,10 +4,10 @@ import { UserSheet } from "./UserSheet"
 import { SearchIcon, UserPlus } from "lucide-react"
 import Image from "next/image"
 import { useGetChats } from "@/hooks/chatHooks"
-import { use } from "react"
+
 export const ChatSidebar = () => {
-    const { isLoading , chats , refetch} = useGetChats(); 
-    console.log("The chats are " , chats); 
+    const { isLoading, chats, refetch } = useGetChats();
+    console.log("The chats are ", chats);
     return (
         <>
             <div className="w-full h-full border border-gray-300 rounded-md">
@@ -19,12 +19,12 @@ export const ChatSidebar = () => {
                         />
                         <SearchIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer h-5 w-5" />
                     </div>
-                    
-                        <UserSheet onAddChat={refetch}/>
+
+                    <UserSheet onAddChat={refetch} />
                 </div>
                 <div className="mt-3">
-                    { chats && chats.map(( chat , index) => (
-                        <ChatCard chat = {chat} key= {index}/>
+                    {chats && chats.map((chat, index) => (
+                        <ChatCard chat={chat} key={index} />
                     ))}
                 </div>
             </div>
@@ -32,13 +32,16 @@ export const ChatSidebar = () => {
     )
 }
 
-const ChatCard = ({chat} : any) => {
-    console.log("The chat in the child component is " , chat)
-    const { admin , isGroupChat , latestMessage , latestMessageCreatedAt , participants , unseenCount , name , otherImageUrl} = chat ; 
+import { useChat } from "@/context/chatContext"
+
+const ChatCard = ({ chat }: any) => {
+    const { setSelectedChat } = useChat();
+    const { admin, isGroupChat, latestMessage, latestMessageCreatedAt, participants, unseenCount, name, otherImageUrl } = chat;
 
     return (
         <>
-            <div className="flex justify-between p-4 border-b border-b-gray-200 mx-3 cursor-pointer hover:bg-gray-50">
+            <div className="flex justify-between p-4 border-b border-b-gray-200 mx-3 cursor-pointer hover:bg-gray-50 rounded-lg"
+                onClick={() => setSelectedChat(chat)}>
                 <div className="flex gap-3">
                     <div className="relative w-12 h-12 flex justify-center item-center">
                         <Image

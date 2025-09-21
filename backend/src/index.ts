@@ -7,6 +7,7 @@ import { Server } from 'socket.io';
 import cors from 'cors'
 import { startMessageConsumer } from './config/kafka';
 import { connectRedis } from './config/redis';
+import { SocketIoServer } from './socket';
 
 dotenv.config({
     path:'./.env'
@@ -23,7 +24,7 @@ const io = new Server(server, {
   },
 });
 
-
+SocketIoServer(io)
 // setUpMediaSoupServer(io);
 
 app.use(express.json({limit: "16kb"}))

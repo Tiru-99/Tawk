@@ -152,7 +152,21 @@ export const getChats = async (req: Request, res: Response) => {
             name: true,
           },
         },
-        messages : true
+        messages : {
+          select : {
+            authorId : true , 
+            author : {
+              select :{
+                name : true , 
+                email : true
+              }
+            }, 
+            content : true , 
+            mediaUrl : true , 
+            id : true , 
+            type : true
+          }
+        }
       },
       orderBy: {
         latestMessageCreatedAt: 'desc',
@@ -170,9 +184,8 @@ export const getChats = async (req: Request, res: Response) => {
       //for single 1v1 chat find the other participant's name
       let otherParticipant ;  
       if(chat.isGroupChat === false){
-        otherParticipant = chat.participants.find((p) => p.id !== id )
+        otherParticipant = chat.participants.find((p) => p.user.id !== id )
       }
-
       return {
         id: chat.id,
         name: chat.name ?? otherParticipant?.user.name,
