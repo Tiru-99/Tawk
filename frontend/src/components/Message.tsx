@@ -83,7 +83,6 @@ const MediaMessage = ({isOwn , message} : MediaMessageProps) => {
         <>
             <div className={`mt-2 ${isOwn ? "self-end" : "self-start"}`}>
               <img src={message?.mediaUrl || "/man.jpg"} alt="media" className="rounded-lg max-w-xs" />
-              {message?.caption && <p className="text-sm mt-1">{message?.caption}</p>}
             </div>
         </>
     )

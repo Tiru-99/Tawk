@@ -6,9 +6,9 @@ import { Input } from "./ui/input"
 import { Message } from "./Message"
 import { Smile, PlusIcon, Send, X } from "lucide-react"
 import { useChat } from "@/context/chatContext"
-import { io } from "socket.io-client";
+import axios from "axios"
 import { toast } from "sonner";
-import { ChatMessages, Chat } from "@/context/chatContext"
+import { ChatMessages } from "@/context/chatContext"
 
 export const ChatBox = () => {
     const { selectedChat, socket } = useChat();
@@ -56,7 +56,9 @@ export const ChatBox = () => {
         const email = localStorage.getItem("email");
         const name = localStorage.getItem("name");
 
-        console.log("The email is", email);
+        if (!authorId || !email || !name) {
+            return;
+        }
 
         const author = {
             email,
@@ -66,7 +68,7 @@ export const ChatBox = () => {
         try {
             if (file) {
                 // Handle file upload first
-                handleFileSubmit();
+                handleFileSubmit(file, author, authorId, email, name);
                 return; // handleFileSubmit will handle the message sending
             }
 
@@ -90,8 +92,47 @@ export const ChatBox = () => {
         }
     }
 
-    const handleFileSubmit = () => {
+    const handleFileSubmit = async (file: File, author: any, authorId: string, name: string, email: string) => {
         //send request to aws and then trigger socket 
+        let imageUrl = ""
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/upload/get-presigned-url`, {
+                params: {
+                    fileType: file.type,
+                },
+            })
+
+            const { key, url } = response.data
+            console.log("the key is ", key)
+            console.log("The url is ", url)
+
+            //upload file to s3
+            await axios.put(url, file, {
+                headers: {
+                    "Content-Type": file.type,
+                },
+            })
+
+            //get the stored object from s3
+            imageUrl = `https://${process.env.NEXT_PUBLIC_BUCKET_NAME}.s3.amazonaws.com/${key}`
+
+            const message = {
+                author,
+                type: "MEDIA",
+                content: "",
+                authorId,
+                mediaUrl: imageUrl,
+                chatId: selectedChat?.id
+            }
+
+            socket.emit("send-message", message);
+            clearMessageInput();
+
+        } catch (error) {
+            console.log("Something went wrong while uploading the image to s3 ", error)
+            return
+        }
+
     }
 
 
@@ -132,7 +173,7 @@ export const ChatBox = () => {
                         <Message message={message} key={index} />
                     ))}
 
-                    <div ref ={messageEndRef}></div>
+                    <div ref={messageEndRef}></div>
                 </div>
 
                 {/* file preview */}
