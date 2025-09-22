@@ -47,7 +47,7 @@ export const startMessageConsumer = async () => {
     await consumer.run({
       eachMessage: async ({ message }) => {
         const parsedMessage = JSON.parse(message.value!.toString());
-        const { type , content , mediaUrl , authorId , chatId } = parsedMessage; 
+        const { type , content , mediaUrl , authorId , chatId} = parsedMessage; 
 
         //store the message in the db 
 
@@ -86,7 +86,7 @@ export const startMessageConsumer = async () => {
          
          console.log("Less go message saved to db !!");
        } catch (error) {
-        console.log("Something went wrong while saving the message to the db");
+        console.log("Something went wrong while saving the message to the db" , error);
        }
       },
     });

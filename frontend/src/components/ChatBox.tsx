@@ -7,16 +7,17 @@ import { Message } from "./Message"
 import { Smile, PlusIcon, Send, X } from "lucide-react"
 import { useChat } from "@/context/chatContext"
 import { io } from "socket.io-client";
-import { toast } from "sonner"
+import { toast } from "sonner";
+import { ChatMessages , Chat } from "@/context/chatContext"
 
 export const ChatBox = () => {
-    const { selectedChat } = useChat();
+    const { selectedChat, setSelectedChat } = useChat();
     const [messageContent, setMessageContent] = useState("");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [file, setFile] = useState<File | null>(null);
     const [imageUrl, setImageUrl] = useState("");
     const [inputDisabled, setInputDisabled] = useState<boolean>(false);
-
+    
     //memoize the socket 
     const socket = useMemo(() => {
         const newSocket = io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {
@@ -26,6 +27,7 @@ export const ChatBox = () => {
         newSocket.on("connection", () => {
             console.log("Connected to the server")
         });
+
         return newSocket
     }, []);
 
@@ -36,18 +38,27 @@ export const ChatBox = () => {
             return;
         }
 
-        const { chatId } = selectedChat
-        socket.emit("join-chat", chatId);
-        console.log("Chat joined successfully")
+        const { id } = selectedChat
+        socket.emit("join-chat", id);
 
-        const messageHandler = ( messageData : any ) => {
-            console.log("Message received on the frontend")
-        }   
+        const messageHandler = (messageData: ChatMessages) => {
+            console.log("Message received on the frontend", messageData);
+
+            setSelectedChat((prevChat: any) => {
+                if (!prevChat) return prevChat; // in case nothing is selected
+
+                return {
+                    ...prevChat,
+                    chatMessages: [...(prevChat.chatMessages || []), messageData], // append new message
+                };
+            });
+        };
+
         //listen for new messages 
-        socket.on("new-message" , messageHandler)
+        socket.on("new-message", messageHandler)
 
         return () => {
-            socket.off("new-message" , messageHandler); 
+            socket.off("new-message", messageHandler);
         }
     }, [socket, selectedChat]);
 
@@ -79,6 +90,15 @@ export const ChatBox = () => {
         }
 
         const authorId = localStorage.getItem("userId");
+        const email = localStorage.getItem("email");
+        const name = localStorage.getItem("name");
+
+        console.log("The email is" , email);
+
+        const author = {
+            email,
+            name
+        }
 
         try {
             if (file) {
@@ -89,6 +109,7 @@ export const ChatBox = () => {
 
             // For normal text messages 
             const message = {
+                author,
                 type: "TEXT",
                 content: messageContent.trim(),
                 authorId,
@@ -111,7 +132,7 @@ export const ChatBox = () => {
     }
 
 
-    if (!selectedChat) {
+    if (selectedChat.length == 0) {
         return (
             <div>
                 Please Select a chat
@@ -144,8 +165,8 @@ export const ChatBox = () => {
                 </div>
                 {/* //Chat Section will be here */}
                 <div className="px-4 flex-1 pb-3 overflow-y-auto">
-                    {selectedChat && selectedChat.chatMessages.map((message : any, index : any) => (
-                        <Message message = {message} key = {index}  />
+                    {selectedChat && selectedChat.chatMessages.map((message: ChatMessages, index: number) => (
+                        <Message message={message} key={index} />
                     ))}
                 </div>
 

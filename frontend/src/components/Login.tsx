@@ -42,7 +42,8 @@ export default function Login() {
          toast.success("Successfully Logged In !")
          localStorage.setItem("userId" , response.data.userId);
          localStorage.setItem("name" , response.data.name);
-         localStorage.setItem("profile_pic" , response.data.imageUrl);
+         localStorage.setItem("imageUrl" , response.data.imageUrl);
+         localStorage.setItem("email" , response.data.email)
          router.push('/home')
  
          console.log("Response : " , response)

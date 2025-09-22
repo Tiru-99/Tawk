@@ -81,7 +81,8 @@ export const loginHandler = async (req: Request, res: Response) => {
         token: jwtToken,
         userId: userExists.id,
         name: userExists.name,
-        imageUrl: userExists.imageUrl
+        imageUrl: userExists.imageUrl,
+        email : userExists.email
       });
   } catch (error) {
     console.log("this is the error", error);

@@ -38,6 +38,18 @@ const ChatCard = ({ chat }: any) => {
     const { setSelectedChat } = useChat();
     const { admin, isGroupChat, latestMessage, latestMessageCreatedAt, participants, unseenCount, name, otherImageUrl } = chat;
 
+    const formatDate = (latestMessageCreatedAt : string) => {
+        const date = new Date(latestMessageCreatedAt);
+
+        // Format: "22 Sep"
+        return date.toLocaleDateString("en-US", {
+            day: "2-digit",
+            month: "short",
+        });
+    };
+
+    const latestTime = formatDate(latestMessageCreatedAt)
+
     return (
         <>
             <div className="flex justify-between p-4 border-b border-b-gray-200 mx-3 cursor-pointer hover:bg-gray-50 rounded-lg"
@@ -53,12 +65,12 @@ const ChatCard = ({ chat }: any) => {
                     </div>
                     <div className="flex flex-col justify-center">
                         <h3 className="font-semibold">{name}</h3>
-                        <p className="text-gray-600">Hey bro wassup ?</p>
+                        <p className="text-gray-600">{latestMessage}</p>
                     </div>
                 </div>
 
                 <div className="flex flex-col gap-[10px]">
-                    <p className="text-sm"> 22 May </p>
+                    <p className="text-sm">{latestTime}</p>
                     <span className="bg-black text-white rounded-full w-5 font-semibold h-5 flex items-center justify-center text-xs">
                         2
                     </span>

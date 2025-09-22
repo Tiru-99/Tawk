@@ -20,6 +20,7 @@ export const Message = ({ message }: any) => {
     const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
     const isOwn = userId === message?.authorId;
 
+
     return (
         <>
             <div className={`mt-3 flex ${isOwn ? "justify-end" : "justify-start"}`}>
