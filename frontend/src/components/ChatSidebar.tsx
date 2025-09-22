@@ -1,13 +1,16 @@
 "use client"
 import { Input } from "./ui/input"
 import { UserSheet } from "./UserSheet"
-import { SearchIcon, UserPlus } from "lucide-react"
+import { SearchIcon } from "lucide-react"
 import Image from "next/image"
-import { useGetChats } from "@/hooks/chatHooks"
+import { useChat, Chat } from "@/context/chatContext"
 
 export const ChatSidebar = () => {
-    const { isLoading, chats, refetch } = useGetChats();
+    const { isLoading, chats, refetch } = useChat();
     console.log("The chats are ", chats);
+
+
+
     return (
         <>
             <div className="w-full h-full border border-gray-300 rounded-md">
@@ -23,7 +26,7 @@ export const ChatSidebar = () => {
                     <UserSheet onAddChat={refetch} />
                 </div>
                 <div className="mt-3">
-                    {chats && chats.map((chat, index) => (
+                    {chats && chats.map((chat: Chat, index: number) => (
                         <ChatCard chat={chat} key={index} />
                     ))}
                 </div>
@@ -32,13 +35,12 @@ export const ChatSidebar = () => {
     )
 }
 
-import { useChat } from "@/context/chatContext"
 
 const ChatCard = ({ chat }: any) => {
-    const { setSelectedChat } = useChat();
+    const { setSelectedChat , selectChat } = useChat();
     const { admin, isGroupChat, latestMessage, latestMessageCreatedAt, participants, unseenCount, name, otherImageUrl } = chat;
 
-    const formatDate = (latestMessageCreatedAt : string) => {
+    const formatDate = (latestMessageCreatedAt: string) => {
         const date = new Date(latestMessageCreatedAt);
 
         // Format: "22 Sep"
@@ -53,7 +55,7 @@ const ChatCard = ({ chat }: any) => {
     return (
         <>
             <div className="flex justify-between p-4 border-b border-b-gray-200 mx-3 cursor-pointer hover:bg-gray-50 rounded-lg"
-                onClick={() => setSelectedChat(chat)}>
+                onClick={() => selectChat(chat)}>
                 <div className="flex gap-3">
                     <div className="relative w-12 h-12 flex justify-center item-center">
                         <Image

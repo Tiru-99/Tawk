@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
+import { Chat } from "@/context/chatContext";
 
 
 export const useGetChats = () => {
     const [isLoading, setIsLoading] = useState<Boolean>(false);
-    const [chats, setChats] = useState([]);
+    const [chats, setChats] = useState<Chat[]>([]);
     
     //use callback to memoize the function
         const getAllChats = useCallback(async () => {
@@ -35,5 +36,5 @@ export const useGetChats = () => {
             getAllChats()
         } , [getAllChats])
 
-    return { isLoading, chats , refetch : getAllChats }
+    return { isLoading, chats , setChats ,  refetch : getAllChats }
 }

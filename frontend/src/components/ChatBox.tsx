@@ -8,59 +8,22 @@ import { Smile, PlusIcon, Send, X } from "lucide-react"
 import { useChat } from "@/context/chatContext"
 import { io } from "socket.io-client";
 import { toast } from "sonner";
-import { ChatMessages , Chat } from "@/context/chatContext"
+import { ChatMessages, Chat } from "@/context/chatContext"
 
 export const ChatBox = () => {
-    const { selectedChat, setSelectedChat } = useChat();
+    const { selectedChat, socket } = useChat();
     const [messageContent, setMessageContent] = useState("");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const messageEndRef = useRef<HTMLDivElement | null>(null);
     const [file, setFile] = useState<File | null>(null);
     const [imageUrl, setImageUrl] = useState("");
     const [inputDisabled, setInputDisabled] = useState<boolean>(false);
-    
-    //memoize the socket 
-    const socket = useMemo(() => {
-        const newSocket = io(`${process.env.NEXT_PUBLIC_BACKEND_URL}`, {
-            withCredentials: true
-        });
-
-        newSocket.on("connection", () => {
-            console.log("Connected to the server")
-        });
-
-        return newSocket
-    }, []);
 
 
+    //scroll to bottom
     useEffect(() => {
-        //join the chat here 
-        if (!selectedChat) {
-            return;
-        }
-
-        const { id } = selectedChat
-        socket.emit("join-chat", id);
-
-        const messageHandler = (messageData: ChatMessages) => {
-            console.log("Message received on the frontend", messageData);
-
-            setSelectedChat((prevChat: any) => {
-                if (!prevChat) return prevChat; // in case nothing is selected
-
-                return {
-                    ...prevChat,
-                    chatMessages: [...(prevChat.chatMessages || []), messageData], // append new message
-                };
-            });
-        };
-
-        //listen for new messages 
-        socket.on("new-message", messageHandler)
-
-        return () => {
-            socket.off("new-message", messageHandler);
-        }
-    }, [socket, selectedChat]);
+        messageEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }, [selectedChat?.chatMessages]);
 
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +56,7 @@ export const ChatBox = () => {
         const email = localStorage.getItem("email");
         const name = localStorage.getItem("name");
 
-        console.log("The email is" , email);
+        console.log("The email is", email);
 
         const author = {
             email,
@@ -132,7 +95,7 @@ export const ChatBox = () => {
     }
 
 
-    if (selectedChat.length == 0) {
+    if (!selectedChat) {
         return (
             <div>
                 Please Select a chat
@@ -168,6 +131,8 @@ export const ChatBox = () => {
                     {selectedChat && selectedChat.chatMessages.map((message: ChatMessages, index: number) => (
                         <Message message={message} key={index} />
                     ))}
+
+                    <div ref ={messageEndRef}></div>
                 </div>
 
                 {/* file preview */}
