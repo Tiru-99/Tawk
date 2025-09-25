@@ -1,13 +1,12 @@
-import { MediaKind, RtpCapabilities, Transport } from "mediasoup/types"
-import { Consumer , Producer } from "mediasoup/types";
-import { DtlsParameters , RtpParameters } from "mediasoup/types";
+
+import { types as mediasoupTypes } from "mediasoup"; 
 
 export default class Peer {
     id: string;
     name: string;
-    private transport: Map<string, Transport>;
-    private producers: Map<string, Producer>;
-    private consumers: Map<string, Consumer>;
+    private transport: Map<string, mediasoupTypes.Transport>;
+    private producers: Map<string, mediasoupTypes.Producer>;
+    private consumers: Map<string, mediasoupTypes.Consumer>;
 
     constructor(id: string, name: string) {
         this.id = id;
@@ -18,12 +17,12 @@ export default class Peer {
     }
 
     //add a transport
-    addTransport(transport: Transport) {
+    addTransport(transport: mediasoupTypes.Transport) {
         this.transport.set(transport.id, transport);
     }
 
     //connect the transport 
-    async connectTransport(transportId: string, dtlsParameters: DtlsParameters) {
+    async connectTransport(transportId: string, dtlsParameters: mediasoupTypes.DtlsParameters) {
         const transport = this.transport.get(transportId);
         console.log("The transport id is , ", transportId);
         if (!transport) {
@@ -32,7 +31,7 @@ export default class Peer {
         await transport?.connect({ dtlsParameters });
     };
 
-    async createProducer(producerTransportId: string, rtpParameters: RtpParameters, kind: MediaKind) {
+    async createProducer(producerTransportId: string, rtpParameters: mediasoupTypes.RtpParameters, kind: mediasoupTypes.MediaKind) {
         let producer = await this.transport.get(producerTransportId)?.produce({ rtpParameters, kind });
         if (!producer) {
             console.log("Error , cannot find the producer")
@@ -52,7 +51,7 @@ export default class Peer {
     async createConsumer(
         consumer_transport_id: string,
         producer_id: string,
-        rtpCapabilities: RtpCapabilities
+        rtpCapabilities: mediasoupTypes.RtpCapabilities
     ) {
         let consumerTransport = this.transport.get(consumer_transport_id);
         if (!consumerTransport) {
@@ -60,7 +59,7 @@ export default class Peer {
             return;
         }
 
-        let consumer: Consumer;
+        let consumer:mediasoupTypes.Consumer;
 
         try {
             consumer = await consumerTransport.consume({

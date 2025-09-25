@@ -1,7 +1,7 @@
 
 import * as mediasoup from 'mediasoup';
 import { config } from './config';
-import { Router } from 'mediasoup/types';
+import { types as mediasoupTypes } from 'mediasoup'
 
 export const createMediasoupWorker = async() => {
     //create a mediasoup worker 
@@ -29,7 +29,7 @@ export const createMediasoupWorker = async() => {
 
 }
 
-export const createWebRTCTransport = async(mediasoupRouter : Router) => {
+export const createWebRTCTransport = async(mediasoupRouter : mediasoupTypes.Router) => {
     const {
         maxIncomingBitrate , 
         initialAvailableOutgoingBitrate,

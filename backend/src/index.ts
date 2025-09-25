@@ -5,13 +5,16 @@ import cookieParser from 'cookie-parser';
 import {createServer} from 'http'; 
 import { Server } from 'socket.io';
 import cors from 'cors'
+import { types as mediasoupTypes } from 'mediasoup';
 import { startMessageConsumer } from './config/kafka';
 import { connectRedis } from './config/redis';
 import { SocketIoServer } from './socket';
+import { SocketService } from './mediasoup/SocketServer';
 
 dotenv.config({
     path:'./.env'
 })
+
 
 
 const app = express();
@@ -25,7 +28,9 @@ const io = new Server(server, {
 });
 
 SocketIoServer(io)
+new SocketService(io)
 // setUpMediaSoupServer(io);
+
 
 app.use(express.json({limit: "16kb"}))
 app.use(express.urlencoded({extended: true, limit: "16kb"}))
@@ -56,11 +61,12 @@ app.get('/' , (req, res)=>{
     res.send("hello world this is aayush tirmanwar");
 })
 
+
 //api routes
 import authRoute from './routes/auth.routes';
 import chatRoute from './routes/chat.routes';
 import messageRoute from './routes/message.routes';
-import imageUploadRoute from './routes/imageUpload.routes'
+import imageUploadRoute from './routes/imageUpload.routes';
 
 
 app.use("/api/v1/user" , authRoute);

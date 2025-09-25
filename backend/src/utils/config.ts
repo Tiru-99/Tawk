@@ -1,5 +1,5 @@
 
-import { RtpCodecCapability } from "mediasoup/types"
+import { types as mediasoupTypes } from "mediasoup"
 
 interface ListenIpsProps {
     ip : string , 
@@ -24,14 +24,14 @@ export const config = {
                         'x-google-start-bitrate' : 1000
                     }
                 }
-            ] as RtpCodecCapability[]
+            ] as mediasoupTypes.RtpCodecCapability[]
         }, 
 
         webRTCTransport : {
             listenIps: [
                 {
                   ip: '0.0.0.0',
-                  announcedIp: "192.168.98.72",
+                  announcedIp: "172.16.150.238",
                 }
               ] as ListenIpsProps[],
               maxIncomingBitrate: 1500000,

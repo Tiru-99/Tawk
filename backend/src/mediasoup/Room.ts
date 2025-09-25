@@ -1,18 +1,18 @@
 import Peer from "./Peer";
 import * as io from "socket.io";
-import { Router } from "mediasoup/types";
-import { DtlsParameters, RtpParameters, Worker , MediaKind , RtpCapabilities } from "mediasoup/types";
+import { types as mediasoupTypes } from "mediasoup";
 import { config } from "../utils/config";
 import { WebSocketEventType } from "./enums";
+
 
 export default class Room {
     id : string ; 
     _peers : Map<string , Peer>;
     io : io.Server
-    private _router : Router | null = null ;
+    private _router : mediasoupTypes.Router | null = null ;
     private _pausedVideoProducerIds: string[] = [];
 
-    constructor(id : string , io : io.Server ,  worker : Worker){
+    constructor(id : string , io : io.Server ,  worker : mediasoupTypes.Worker){
         this.id = id ; 
         this._peers = new Map<string , Peer>; 
         this.io = io ; 
@@ -105,7 +105,7 @@ export default class Room {
     public async connectPeerTransport(
         userId : string , 
         transportId : string , 
-        dtlsParameters : DtlsParameters
+        dtlsParameters : mediasoupTypes.DtlsParameters
     ){
         const peer = this._peers.get(userId); 
         if(!peer){
@@ -136,8 +136,8 @@ export default class Room {
     public async produce(
         userId: string,
         producerTransportId: string,
-        rtpParameters: RtpParameters,
-        kind: MediaKind
+        rtpParameters: mediasoupTypes.RtpParameters,
+        kind: mediasoupTypes.MediaKind
       ): Promise<string> {
         try {
           const peer = this._peers.get(userId);
@@ -170,7 +170,7 @@ export default class Room {
         socket_id : string, 
         consumer_transport_id: string,
         producer_id: string,
-        rtpCapabilities: RtpCapabilities
+        rtpCapabilities: mediasoupTypes.RtpCapabilities
       ) {
         const routerCanConsume = this._router?.canConsume({
           producerId: producer_id,
