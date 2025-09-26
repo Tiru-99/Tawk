@@ -25,6 +25,7 @@ export const Message = ({ message }: any) => {
     hour12: true,
   });
 
+  console.log("imageurl of author is " , message.author.imageUrl);
 
   return (
     <>
@@ -33,7 +34,7 @@ export const Message = ({ message }: any) => {
           {!isOwn && (
             <div className="">
               <Avatar>
-                <AvatarImage className="h-10 w-10" src={message.author.imageUrl}></AvatarImage>
+                <AvatarImage className="h-10 w-10" src={message?.author?.imageUrl}></AvatarImage>
                 <AvatarFallback></AvatarFallback>
               </Avatar>
             </div>

@@ -8,9 +8,14 @@ import { GroupDialog } from "./GroupDialog"
 import { Navbar } from "./Navbar"
 import { User , Users} from "lucide-react"
 import { useResetUnseen } from "@/hooks/chatHooks"
+import { ChatSidebarSkeleton } from "./ChatLoader"
 
 export const ChatSidebar = () => {
     const { isLoading, chats, refetch } = useChat();
+
+    if(isLoading){
+        return  <ChatSidebarSkeleton/>
+    }
 
     return (
         <>

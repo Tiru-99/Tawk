@@ -11,7 +11,7 @@ export const useGetChats = () => {
     //use callback to memoize the function
     const getAllChats = useCallback(async () => {
         try {
-            setIsLoading(false);
+            setIsLoading(true);
             const userId = localStorage.getItem("userId");
 
             if (!userId) {

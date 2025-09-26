@@ -205,8 +205,8 @@ export const ChatBox = () => {
 
     if (!selectedChat) {
         return (
-            <div>
-                Please Select a chat
+            <div className="flex justify-center items-center h-full">
+                <h1 className="font-bold text-5xl text-gray-400"> PLEASE SELECT A CHAT </h1>
             </div>
         )
     }
