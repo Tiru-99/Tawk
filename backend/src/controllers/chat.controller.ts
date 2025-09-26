@@ -160,8 +160,11 @@ export const getChats = async (req: Request, res: Response) => {
             author : {
               select :{
                 name : true , 
-                email : true
-              }
+                email : true,
+                imageUrl : true
+              }, 
+            
+              
             },
             chat : {
               select : {
@@ -171,7 +174,8 @@ export const getChats = async (req: Request, res: Response) => {
             content : true , 
             mediaUrl : true , 
             id : true , 
-            type : true
+            type : true,
+            createdAt : true
           }
         }
       },

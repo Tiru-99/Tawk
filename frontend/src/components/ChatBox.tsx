@@ -84,14 +84,16 @@ export const ChatBox = () => {
         const authorId = localStorage.getItem("userId");
         const email = localStorage.getItem("email");
         const name = localStorage.getItem("name");
+        const imageUrl = localStorage.getItem("imageUrl");
 
-        if (!authorId || !email || !name) {
+        if (!authorId || !email || !name ||!imageUrl) {
             return;
         }
 
         const author = {
             email,
-            name
+            name ,
+            imageUrl
         }
 
         try {
@@ -108,7 +110,8 @@ export const ChatBox = () => {
                 content: messageContent.trim(),
                 authorId,
                 mediaUrl: "",
-                chatId: selectedChat?.id
+                chatId: selectedChat?.id,
+                createdAt : Date.now()
             }
 
             socket.emit("send-message", message);
@@ -149,7 +152,8 @@ export const ChatBox = () => {
                 content: "",
                 authorId,
                 mediaUrl: imageUrl,
-                chatId: selectedChat?.id
+                chatId: selectedChat?.id,
+                createdAt : Date.now()
             }
 
             socket.emit("send-message", message);
@@ -169,6 +173,10 @@ export const ChatBox = () => {
         const authorId = localStorage.getItem("userId");
         const email = localStorage.getItem("email");
         const name = localStorage.getItem("name");
+        const imageUrl = localStorage.getItem("imageUrl");
+
+        console.log("The imageuLr in the message is " , imageUrl ); 
+        
 
         if (!authorId || !email || !name) {
             return;
@@ -176,7 +184,8 @@ export const ChatBox = () => {
 
         const author = {
             email,
-            name
+            name , 
+            imageUrl 
         }
 
         const message = {
@@ -186,7 +195,8 @@ export const ChatBox = () => {
             authorId,
             mediaUrl: "",
             callUrl: videoCallUrl,
-            chatId: selectedChat?.id
+            chatId: selectedChat?.id,
+            createdAt : Date.now()
 
         }
         // call socket client 
@@ -202,6 +212,7 @@ export const ChatBox = () => {
         )
     }
 
+    console.log("The imageUrl is " , selectedChat.otherImageUrl)
 
     return (
         <>
@@ -234,7 +245,7 @@ export const ChatBox = () => {
                             <i>Start a conversation</i>
                         </div>}
                     {selectedChat && selectedChat.chatMessages.map((message: ChatMessages, index: number) => (
-                        <Message message={message} key={index} />
+                        <Message message={message}  key={index} />
                     ))}
 
                     <div ref={messageEndRef}></div>

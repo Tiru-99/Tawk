@@ -13,14 +13,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { routerServerGlobal } from "next/dist/server/lib/router-utils/router-server-context";
-
 //goal check if the message is isOwn , and sepearte the message with the text , media message and call message bubble
 
 export const Message = ({ message }: any) => {
   // Safe localStorage access (only in browser)
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
   const isOwn = userId === message?.authorId;
+
+  const formatted = new Date(message?.createdAt).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
 
   return (
@@ -30,7 +34,7 @@ export const Message = ({ message }: any) => {
           {!isOwn && (
             <div className="">
               <Avatar>
-                <AvatarImage className="h-10 w-10" src={"/man.jpg"}></AvatarImage>
+                <AvatarImage className="h-10 w-10" src={message.author.imageUrl}></AvatarImage>
                 <AvatarFallback></AvatarFallback>
               </Avatar>
             </div>
@@ -41,7 +45,7 @@ export const Message = ({ message }: any) => {
               <span className="flex justify-center items-center rounded-full">
                 <Dot className="text-neutral-500" />
               </span>
-              <p className="text-gray-500 text-sm"> 8:03 AM</p>
+              <p className="text-gray-500 text-sm">{formatted}</p>
             </div>
 
 
@@ -100,8 +104,8 @@ const VideoCallMessage = ({ isOwn, url }: { isOwn: boolean, url: string }) => {
         <DialogTrigger asChild>
           <div
             className={`flex items-center px-4 py-2 mt-2 rounded-lg text-sm cursor-pointer ${isOwn
-                ? "bg-blue-100 text-blue-700 self-end"
-                : "bg-green-100 text-green-700 self-start"
+              ? "bg-blue-100 text-blue-700 self-end"
+              : "bg-green-100 text-green-700 self-start"
               }`}
           >
             <Video className="w-5 h-5 mr-2" />

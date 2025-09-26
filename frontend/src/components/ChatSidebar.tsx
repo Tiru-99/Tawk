@@ -1,18 +1,21 @@
 "use client"
 import { Input } from "./ui/input"
 import { UserSheet } from "./UserSheet"
-import { SearchIcon  , Users } from "lucide-react"
+import { SearchIcon } from "lucide-react"
 import Image from "next/image"
 import { useChat, Chat } from "@/context/chatContext"
 import { GroupDialog } from "./GroupDialog"
+import { Navbar } from "./Navbar"
+import { User , Users} from "lucide-react"
 
 export const ChatSidebar = () => {
     const { isLoading, chats, refetch } = useChat();
-    console.log("The chats are ", chats);
+
+
 
     return (
         <>
-            <div className="w-full h-full border border-gray-200 rounded-xl bg-white shadow-sm">
+            <div className="flex flex-col w-full h-full border border-gray-200 rounded-xl bg-white shadow-sm">
                 {/* Top search + add user */}
                 <div className="px-4 flex justify-center items-center gap-3 pt-4">
                     <div className="relative w-full">
@@ -28,11 +31,14 @@ export const ChatSidebar = () => {
                 </div>
 
                 {/* Chat list */}
-                <div className="mt-3">
+                <div className="mt-3 flex-1 overflow-y-auto">
                     {chats && chats.map((chat: Chat, index: number) => (
                         <ChatCard chat={chat} key={index} />
                     ))}
                 </div>
+
+                <Navbar />
+
             </div>
         </>
     )
@@ -40,7 +46,7 @@ export const ChatSidebar = () => {
 
 
 const ChatCard = ({ chat }: any) => {
-    const { setSelectedChat , selectChat } = useChat();
+    const { setSelectedChat, selectChat } = useChat();
     const { admin, isGroupChat, latestMessage, latestMessageCreatedAt, participants, unseenCount, name, otherImageUrl } = chat;
 
     const formatDate = (latestMessageCreatedAt: string) => {
@@ -62,12 +68,23 @@ const ChatCard = ({ chat }: any) => {
             >
                 <div className="flex gap-3 items-center">
                     <div className="relative w-12 h-12">
-                        <Image
-                            src={otherImageUrl || "/man.jpg"}
-                            alt="profile"
-                            fill
-                            className="rounded-full object-cover shadow-sm"
-                        />
+                        {otherImageUrl ? (
+                            <Image
+                                src={otherImageUrl}
+                                alt="profile"
+                                fill
+                                className="rounded-full object-cover shadow-sm"
+
+                            />
+                        ) : (
+                            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center shadow-sm">
+                                {isGroupChat ? (
+                                    <Users className="w-6 h-6 text-gray-500" />  // 👥 group chat icon
+                                ) : (
+                                    <User className="w-6 h-6 text-gray-500" />   // 👤 single user icon
+                                )}
+                            </div>
+                        )}
                     </div>
                     <div className="flex flex-col justify-center">
                         <h3 className="font-medium text-gray-900 text-sm">{name}</h3>

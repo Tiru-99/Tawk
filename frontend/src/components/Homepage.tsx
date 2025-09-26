@@ -1,7 +1,6 @@
 import { useLogout } from "@/hooks/useAuth";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatBox } from "./ChatBox";
-
 import { useChat } from "@/context/chatContext";
 
 export default function HomePage() {
@@ -9,11 +8,7 @@ export default function HomePage() {
     const { selectedChat, setSelectedChat } = useChat();
     return (
         <>
-            <div>
-                Hi this is the homepage bro ,
-                <button
-                    onClick={doLogout}>{isLoading ? "logging out" : "log out"}</button>
-            </div>
+         
 
             {/* Desktop Container */}
 
@@ -24,6 +19,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="w-3/4">
+                        
                         {/* Chat Section */}
                         <ChatBox />
                     </div>
