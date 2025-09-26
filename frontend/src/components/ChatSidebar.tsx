@@ -7,15 +7,16 @@ import { useChat, Chat } from "@/context/chatContext"
 import { GroupDialog } from "./GroupDialog"
 import { Navbar } from "./Navbar"
 import { User , Users} from "lucide-react"
+import { useResetUnseen } from "@/hooks/chatHooks"
 
 export const ChatSidebar = () => {
     const { isLoading, chats, refetch } = useChat();
 
-
-
     return (
         <>
+            
             <div className="flex flex-col w-full h-full border border-gray-200 rounded-xl bg-white shadow-sm">
+                {/* <h2 className="text-2xl pl-5 pt-3 font-semibold">Messages(4)</h2> */}
                 {/* Top search + add user */}
                 <div className="px-4 flex justify-center items-center gap-3 pt-4">
                     <div className="relative w-full">
@@ -48,6 +49,7 @@ export const ChatSidebar = () => {
 const ChatCard = ({ chat }: any) => {
     const { setSelectedChat, selectChat } = useChat();
     const { admin, isGroupChat, latestMessage, latestMessageCreatedAt, participants, unseenCount, name, otherImageUrl } = chat;
+     const { resetUnseen } = useResetUnseen(); 
 
     const formatDate = (latestMessageCreatedAt: string) => {
         const date = new Date(latestMessageCreatedAt);
@@ -58,13 +60,31 @@ const ChatCard = ({ chat }: any) => {
         });
     };
 
+    const handleChatSelect = () => {
+        selectChat(chat);
+        //send api request to reduce the  unseen count to zero 
+        const userId = localStorage.getItem("userId");
+        if(!userId ){
+            return ; 
+        }
+
+        const dataToSend = {
+            userId , 
+            chatId : chat.id
+        }
+
+        resetUnseen(dataToSend)
+        //optimistic update
+        chat.unseenCount = 0 ; 
+    }
+
     const latestTime = formatDate(latestMessageCreatedAt)
 
     return (
         <>
             <div
                 className="flex justify-between items-center p-4 border-b border-gray-100 mx-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-all duration-200"
-                onClick={() => selectChat(chat)}
+                onClick={handleChatSelect}
             >
                 <div className="flex gap-3 items-center">
                     <div className="relative w-12 h-12">

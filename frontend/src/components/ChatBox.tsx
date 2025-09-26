@@ -10,6 +10,7 @@ import axios from "axios"
 import { toast } from "sonner";
 import { ChatMessages } from "@/context/chatContext"
 import { v4 as uuidv4 } from 'uuid';
+import { User , Users } from "lucide-react"
 
 export const ChatBox = () => {
     const { selectedChat, socket } = useChat();
@@ -219,15 +220,26 @@ export const ChatBox = () => {
                 <div className="flex justify-between p-3 border-b border-gray-300">
                     <div className="flex gap-3 items-center">
                         <div className="h-12 w-12 relative rounded-full">
+                            {selectedChat.otherImageUrl ? (
                             <Image
-                                src={selectedChat.otherImageUrl ?? "/man.jpg"}
-                                alt="image"
+                                src={selectedChat.otherImageUrl}
+                                alt="profile"
                                 fill
-                                className="object-cover rounded-full ">
-                            </Image>
+                                className="rounded-full object-cover shadow-sm"
+
+                            />
+                        ) : (
+                            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center shadow-sm">
+                                {selectedChat.isGroupChat ? (
+                                    <Users className="w-6 h-6 text-gray-500" />  // 👥 group chat icon
+                                ) : (
+                                    <User className="w-6 h-6 text-gray-500" />   // 👤 single user icon
+                                )}
+                            </div>
+                        )}
                         </div>
                         <div className="flex flex-col">
-                            <p className="text-lg font-semibold">{selectedChat.name}</p>
+                            <p className="text-lg text-gray-800 font-semibold">{selectedChat.name}</p>
                         </div>
                     </div>
 

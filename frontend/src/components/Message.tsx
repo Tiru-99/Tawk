@@ -40,7 +40,7 @@ export const Message = ({ message }: any) => {
           )}
           <div className="flex flex-col">
             <div className={`flex items-center ${isOwn ? "justify-end" : "justify-start"}`}>
-              <p className="font-semibold">{isOwn ? "You" : message?.author?.name}</p>
+              <p className="text-gray-900">{isOwn ? "You" : message?.author?.name}</p>
               <span className="flex justify-center items-center rounded-full">
                 <Dot className="text-neutral-500" />
               </span>
@@ -71,7 +71,7 @@ export const Message = ({ message }: any) => {
 const TextMessage = ({ isOwn, content }: { isOwn: boolean, content: string }) => {
   return (
     <>
-      <div className={`p-4 rounded-lg mt-2 ${isOwn ? "bg-blue-500 text-white" : "border-neutral-200 bg-gray-50/30 border"}`}>
+      <div className={`p-3 rounded-lg mt-2 ${isOwn ? "bg-blue-500 text-white" : "border-neutral-200 bg-gray-50/30 border"}`}>
         <p>{content}</p>
       </div>
     </>

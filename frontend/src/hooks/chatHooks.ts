@@ -40,20 +40,20 @@ export const useGetChats = () => {
 }
 
 interface GropuChatProps {
-    userIds : string[], 
-    name : string , 
-    adminId : string 
+    userIds: string[],
+    name: string,
+    adminId: string
 }
 
 export const useCreateGroupChat = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
 
-    const createGroupChat = async (data: GropuChatProps) => { 
+    const createGroupChat = async (data: GropuChatProps) => {
         setIsSubmitting(true);
         try {
-            await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/groupchat`, data , {
-                withCredentials : true
+            await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/groupchat`, data, {
+                withCredentials: true
             }
 
             );
@@ -67,5 +67,27 @@ export const useCreateGroupChat = () => {
         }
     }
 
-    return { createGroupChat , isSubmitting }
+    return { createGroupChat, isSubmitting }
+}
+
+interface ResetUnseenProps {
+    userId : string ; 
+    chatId : string
+}
+//hook to reduce unseen count 
+
+export const useResetUnseen = () => {
+    const resetUnseen = async (data: ResetUnseenProps) => {
+        //chat id , and userId 
+        try {
+            await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/chat/resetseen`, data, {
+                withCredentials: true
+            });
+            console.log("reset done");
+        } catch (error) {
+            console.log("Something went wrong while resetting", error)
+        }
+    }
+
+    return { resetUnseen }
 }
