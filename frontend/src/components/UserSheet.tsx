@@ -11,7 +11,7 @@ type UserSheetProps = {
 }
 export const UserSheet = ({ onAddChat }: UserSheetProps) => {
 
-    const { users, isLoading, refetch } = useUsers();
+    const { users, isLoading, fetchUsers } = useUsers();
     const { isLoading: createChatLoading, createChat } = useCreateChat();
 
     const handleCreateChat = (name: string, imageUrl: string, id: string, email: string) => {
@@ -24,7 +24,7 @@ export const UserSheet = ({ onAddChat }: UserSheetProps) => {
 
         createChat(data).then(() => {
             //refetch on creating
-            refetch();
+            fetchUsers();
             onAddChat();
         });
     }
@@ -34,7 +34,8 @@ export const UserSheet = ({ onAddChat }: UserSheetProps) => {
         <>
             <Sheet>
                 <SheetTrigger asChild>
-                    <UserPlus className="text-gray-400 cursor-pointer"></UserPlus>
+                    <UserPlus className="text-gray-400 cursor-pointer"
+                        onClick={() => fetchUsers()}></UserPlus>
                 </SheetTrigger>
                 <SheetContent className="bg-white p-4">
                     {createChatLoading || isLoading ? (
@@ -54,28 +55,40 @@ export const UserSheet = ({ onAddChat }: UserSheetProps) => {
                         />
 
                         <div className="space-y-4">
-                            {/* Hardcoded People */}
-                            {users.map((user, index) => (
-                                <div key={index} className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                        <Avatar className="h-11 w-11">
-                                            <AvatarImage src={user.imageUrl} alt="@shadcn" />
-                                            <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                                        </Avatar>
+                            {users && users.length === 0 ? (
+                                <p className="text-center text-gray-500">No current users found</p>
+                            ) : (
+                                users.map((user, index) => (
+                                    <div key={index} className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-3">
+                                            <Avatar className="h-11 w-11">
+                                                <AvatarImage src={user.imageUrl} alt="@shadcn" />
+                                                <AvatarFallback>
+                                                    {user.name.slice(0, 2).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
 
-                                        <span className="font-medium">{user.name}</span>
+                                            <span className="font-medium">{user.name}</span>
+                                        </div>
+
+                                        <SheetClose asChild>
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="cursor-pointer"
+                                                onClick={() =>
+                                                    handleCreateChat(user.name, user.imageUrl, user.id, user.email)
+                                                }
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                                <span className="sr-only">Add {user.name}</span>
+                                            </Button>
+                                        </SheetClose>
                                     </div>
-
-                                    <SheetClose asChild>
-                                        <Button size="icon" variant="ghost" className="cursor-pointer"
-                                            onClick={() => handleCreateChat(user.name, user.imageUrl, user.id, user.email)}>
-                                            <Plus className="h-4 w-4" />
-                                            <span className="sr-only">Add {user.name}</span>
-                                        </Button>
-                                    </SheetClose>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
+
                     </div>
                 </SheetContent>
             </Sheet>

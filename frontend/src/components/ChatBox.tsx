@@ -27,14 +27,42 @@ export const ChatBox = () => {
     }, [selectedChat?.chatMessages]);
 
 
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const fileToSend = e.target.files?.[0];
         if (!fileToSend) return;
         setFile(fileToSend);
         const imgUrl = URL.createObjectURL(fileToSend);
         setImageUrl(imgUrl);
+        setInputDisabled(true);
     }
 
+    const handleClick = () => {
+        if (!fileInputRef.current) return;
+
+        fileInputRef.current.click();
+
+        let fileSelected = false;
+
+        const onFileChange = () => {
+            fileSelected = true;
+            setInputDisabled(true); // Disable because file was selected
+            fileInputRef.current?.removeEventListener('change', onFileChange);
+        };
+
+        const onFocus = () => {
+            // Small delay to ensure change event fires first if file was selected
+            setTimeout(() => {
+                if (!fileSelected) {
+                    setInputDisabled(false); // Keep enabled because user canceled
+                }
+            }, 100);
+            window.removeEventListener("focus", onFocus);
+        };
+
+        fileInputRef.current.addEventListener('change', onFileChange);
+        window.addEventListener("focus", onFocus);
+    };
 
     const clearMessageInput = () => {
         setMessageContent("");
@@ -156,13 +184,13 @@ export const ChatBox = () => {
             type: "CALL",
             content: "",
             authorId,
-            mediaUrl:"",
-            callUrl : videoCallUrl , 
+            mediaUrl: "",
+            callUrl: videoCallUrl,
             chatId: selectedChat?.id
 
         }
         // call socket client 
-        socket.emit("send-message" , message)
+        socket.emit("send-message", message)
     }
 
 
@@ -174,10 +202,11 @@ export const ChatBox = () => {
         )
     }
 
+
     return (
         <>
             {/* Header */}
-            <div className="flex flex-col h-full border border-gray-300 rounded-md relative">
+            <div className="flex flex-col h-full border border-gray-200 rounded-md relative shadow-sm ">
                 <div className="flex justify-between p-3 border-b border-gray-300">
                     <div className="flex gap-3 items-center">
                         <div className="h-12 w-12 relative rounded-full">
@@ -200,6 +229,10 @@ export const ChatBox = () => {
                 </div>
                 {/* //Chat Section will be here */}
                 <div className="px-4 flex-1 pb-3 overflow-y-auto">
+                    {selectedChat && selectedChat.chatMessages == 0 &&
+                        <div className="flex justify-center items-center text-gray-400 h-full text-3xl">
+                            <i>Start a conversation</i>
+                        </div>}
                     {selectedChat && selectedChat.chatMessages.map((message: ChatMessages, index: number) => (
                         <Message message={message} key={index} />
                     ))}
@@ -248,6 +281,7 @@ export const ChatBox = () => {
                                 onChange={(e) => {
                                     setMessageContent(e.target.value)
                                 }}
+                                value={messageContent}
                             />
                             <Smile
                                 className="absolute left-[1%] bottom-[26%]  cursor-pointer text-gray-400"
@@ -263,10 +297,7 @@ export const ChatBox = () => {
                         ></input>
 
                         <div className="p-3 cursor-pointer rounded-full border border-gray-300 bg-gray-50 flex justify-center items-center"
-                            onClick={() => {
-                                fileInputRef.current?.click();
-                                setInputDisabled(true)
-                            }}>
+                            onClick={handleClick}>
                             <PlusIcon className="text-gray-600" />
                         </div>
 

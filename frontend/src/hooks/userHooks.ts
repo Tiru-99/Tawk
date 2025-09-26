@@ -14,7 +14,8 @@ export const useUsers = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     // fetch function wrapped in useCallback so we can reuse it
-    const fetchUsers = useCallback(async () => {
+
+    const fetchUsers = async() => {
         const userId = localStorage.getItem("userId");
         console.log("The user id is ", userId);
         if (!userId) return;
@@ -31,14 +32,14 @@ export const useUsers = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }
 
     // fetch once on mount
-    useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+    // useEffect(() => {
+    //     fetchUsers();
+    // }, [fetchUsers]);
 
-    return { users, isLoading, refetch: fetchUsers };
+    return { users, isLoading, fetchUsers };
 };
 
 export const useCreateChat = () => {

@@ -40,7 +40,6 @@ export function GroupDialog({ onAddChat } : GroupDialogProps) {
     )
   }
 
-  console.log("Selected users are ", selectedUsers);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); 
@@ -57,7 +56,7 @@ export function GroupDialog({ onAddChat } : GroupDialogProps) {
     }
     // call the api to create the group chat 
     const finalUserIds = [...selectedUsers , userId]; 
-    
+
     const dataToSend = {
       userIds: finalUserIds,
       name: groupName,
@@ -70,17 +69,17 @@ export function GroupDialog({ onAddChat } : GroupDialogProps) {
 
   }
 
-  console.log("the users are , ", users);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" onClick={getUsers}>
+        <Button variant="outline" size="icon" onClick={getUsers} className="border border-gray-300 text-gray-400 cursor-pointer">
           <Users className="h-5 w-5" />
           <span className="sr-only">Create group chat</span>
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[425px] bg-white border border-gray-300">
+      <DialogContent className="sm:max-w-[425px] bg-white border border-gray-300 ">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create Group Chat</DialogTitle>
