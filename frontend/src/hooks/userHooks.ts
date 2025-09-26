@@ -24,7 +24,7 @@ export const useUsers = () => {
             const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/user/getAllUsers/${userId}`, {
                 withCredentials: true
             });
-            
+
             setUsers(res.data.users);
         } catch (error) {
             console.error("Something went wrong while getting users", error);
@@ -71,4 +71,32 @@ export const useCreateChat = () => {
 
     return { isLoading, createChat }
 
-}   
+}
+
+export const useGetUsersForGroupChat = () => {
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [users, setUsers] = useState([]);
+
+    const getUsers = async () => {
+        setIsLoading(true);
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+            return;
+        }
+
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/user/getUsers/${userId}`, {
+                withCredentials: true
+            });
+            setUsers(res.data.users);
+        } catch (error) {
+            console.error("Something went wrong ", error);
+            setIsLoading(false);
+        } finally {
+            setIsLoading(false);
+        }
+
+    }
+
+    return { getUsers , users ,isLoading }
+}

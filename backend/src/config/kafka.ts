@@ -47,7 +47,7 @@ export const startMessageConsumer = async () => {
     await consumer.run({
       eachMessage: async ({ message }) => {
         const parsedMessage = JSON.parse(message.value!.toString());
-        const { type , content , mediaUrl , authorId , chatId} = parsedMessage; 
+        const { type , content , mediaUrl , authorId , chatId , callUrl } = parsedMessage; 
 
         //store the message in the db 
 
@@ -59,7 +59,8 @@ export const startMessageConsumer = async () => {
                  chatId, 
                  authorId,
                  mediaUrl , 
-                 type 
+                 type , 
+                 callUrl
              }
          });
 

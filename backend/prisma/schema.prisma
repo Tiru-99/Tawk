@@ -31,7 +31,7 @@ model Chat {
   isGroupChat            Boolean
   name                   String?
   adminId                String?
-  admin                  User?          @relation(fields: [adminId], references: [id])
+  admin                  User?         @relation(fields: [adminId], references: [id])
   latestMessage          String
   latestMessageCreatedAt DateTime      @default(now())
   messages               Messages[]
@@ -45,8 +45,8 @@ model Participant {
   unseenCount Int      @default(0)
   chatId      String?
   userId      String
-  user        User     @relation(fields: [userId], references: [id] , onDelete: Cascade)
-  chat        Chat?    @relation(fields: [chatId], references: [id] , onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat        Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@unique([userId, chatId])
 }
@@ -62,9 +62,10 @@ model Messages {
   content   String?
   authorId  String
   mediaUrl  String?
+  callUrl   String?
   author    User        @relation(fields: [authorId], references: [id])
   type      MessageType
   createdAt DateTime    @default(now())
   chatId    String?
-  chat      Chat?       @relation(fields: [chatId], references: [id] , onDelete: Cascade)
+  chat      Chat?       @relation(fields: [chatId], references: [id], onDelete: Cascade)
 }

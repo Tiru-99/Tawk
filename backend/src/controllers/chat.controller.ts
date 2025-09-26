@@ -79,6 +79,7 @@ export const createChat = async (req: Request, res: Response) => {
 
 export const createGroupChat = async (req: Request, res: Response) => {
   const { userIds, name, adminId } = req.body;
+  console.log("the incoming userIds are " , userIds) ; 
 
   if (!Array.isArray(userIds) || userIds.length === 0) {
     return res.status(400).json({ 
@@ -126,6 +127,7 @@ export const getChats = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
+   
     const chats = await prisma.chat.findMany({
       where: {
         participants: {
@@ -175,10 +177,8 @@ export const getChats = async (req: Request, res: Response) => {
       },
       orderBy: {
         latestMessageCreatedAt: 'desc',
-      },
+      }
     });
-
-    
 
     const simplifiedChats = chats.map((chat) => {
       // Get current user's participant data for unseen count
@@ -212,6 +212,8 @@ export const getChats = async (req: Request, res: Response) => {
         })),
       };
     });
+
+    console.log("The simplified chats are " , simplifiedChats)
 
     res.status(200).json({
       message: "Chats fetched successfully",

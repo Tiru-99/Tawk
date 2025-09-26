@@ -9,6 +9,7 @@ import { useChat } from "@/context/chatContext"
 import axios from "axios"
 import { toast } from "sonner";
 import { ChatMessages } from "@/context/chatContext"
+import { v4 as uuidv4 } from 'uuid';
 
 export const ChatBox = () => {
     const { selectedChat, socket } = useChat();
@@ -103,8 +104,6 @@ export const ChatBox = () => {
             })
 
             const { key, url } = response.data
-            console.log("the key is ", key)
-            console.log("The url is ", url)
 
             //upload file to s3
             await axios.put(url, file, {
@@ -135,6 +134,37 @@ export const ChatBox = () => {
 
     }
 
+    const handleVideoCall = () => {
+        //get a uuid 
+        const videoCallUrl = uuidv4();
+        //create a message 
+        const authorId = localStorage.getItem("userId");
+        const email = localStorage.getItem("email");
+        const name = localStorage.getItem("name");
+
+        if (!authorId || !email || !name) {
+            return;
+        }
+
+        const author = {
+            email,
+            name
+        }
+
+        const message = {
+            author,
+            type: "CALL",
+            content: "",
+            authorId,
+            mediaUrl:"",
+            callUrl : videoCallUrl , 
+            chatId: selectedChat?.id
+
+        }
+        // call socket client 
+        socket.emit("send-message" , message)
+    }
+
 
     if (!selectedChat) {
         return (
@@ -163,7 +193,8 @@ export const ChatBox = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center">
+                    <div className="flex items-center"
+                        onClick={handleVideoCall}>
                         <span className="mr-4 cursor-pointer hover:bg-gray-300/30 p-3 rounded-full"><Video /></span>
                     </div>
                 </div>
