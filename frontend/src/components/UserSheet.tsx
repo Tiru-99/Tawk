@@ -29,7 +29,6 @@ export const UserSheet = ({ onAddChat }: UserSheetProps) => {
         });
     }
 
-    //todo add loaders here bro
     return (
         <>
             <Sheet>

@@ -174,8 +174,6 @@ export const ChatBox = () => {
         const email = localStorage.getItem("email");
         const name = localStorage.getItem("name");
         const imageUrl = localStorage.getItem("imageUrl");
-
-        console.log("The imageuLr in the message is " , imageUrl ); 
         
 
         if (!authorId || !email || !name) {

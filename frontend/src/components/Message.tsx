@@ -13,7 +13,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-//goal check if the message is isOwn , and sepearte the message with the text , media message and call message bubble
 
 export const Message = ({ message }: any) => {
   // Safe localStorage access (only in browser)
