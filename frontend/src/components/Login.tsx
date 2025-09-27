@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "./ui/button"
 import { Label } from "@radix-ui/react-label"
 import { Loader2, Eye, EyeOff } from "lucide-react"
@@ -10,6 +10,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import axios from 'axios';
+import { useAuth } from "@/hooks/useAuth"
 
 
 interface LoginFormData {
@@ -26,6 +27,13 @@ export default function Login() {
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const { isLoading: loading, isAuthenticated } = useAuth();
+
+    useEffect(() => {
+        if (!loading && isAuthenticated) {
+            router.push('/');
+        }
+    }, [loading, isAuthenticated, router]);
 
     // simple validation logic
     const validateForm = () => {
@@ -54,11 +62,11 @@ export default function Login() {
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
-        const validationError = validateForm() ; 
+        const validationError = validateForm();
 
-        if(validationError){
+        if (validationError) {
             toast.error(validationError);
-            return ;
+            return;
         }
 
         try {
@@ -76,7 +84,7 @@ export default function Login() {
             localStorage.setItem("name", response.data.name);
             localStorage.setItem("imageUrl", response.data.imageUrl);
             localStorage.setItem("email", response.data.email)
-            router.push('/home');
+            router.push('/');
         } catch (error: any) {
             console.log("Error : ", error);
             setError(error.response.data.message);

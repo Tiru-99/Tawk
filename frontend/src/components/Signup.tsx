@@ -1,7 +1,8 @@
 "use client"
 
 import { Button } from "./ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/hooks/useAuth"
 import { Label } from "@radix-ui/react-label"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import axios from "axios"
@@ -9,7 +10,8 @@ import { Input } from "./ui/input"
 import Image from "next/image"
 import { Toaster, toast } from "sonner"
 import Link from "next/link"
-import type React from "react" // Added import for React
+import type React from "react"
+import { useRouter } from "next/navigation"
 
 interface FormData {
   email: string
@@ -25,20 +27,27 @@ export default function Signup() {
     password: "",
     confirmPassword: "",
   })
-
+  const router = useRouter(); 
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { isLoading: loading, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.push('/');
+    }
+  }, [loading, isAuthenticated, router]);
 
   // simple validation logic
   const validateForm = () => {
-    const { email, password , name } = formData;
-    if(!name.trim()){
+    const { email, password, name } = formData;
+    if (!name.trim()) {
       return "Name is required !"
     }
 
-    if(name.length < 2){
+    if (name.length < 2) {
       return "Name should be greater than 2 words"
     }
     // check email format
@@ -64,11 +73,11 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const validationError = validateForm(); 
+    const validationError = validateForm();
 
-    if(validationError){
+    if (validationError) {
       toast.error(validationError);
-      return ;
+      return;
     }
     setIsLoading(true)
     setError("")
