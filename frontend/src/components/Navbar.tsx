@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRef } from "react"
+import { useLogout } from "@/hooks/useAuth"
 import axios from "axios"
 
 export const Navbar = () => {
@@ -16,6 +17,7 @@ export const Navbar = () => {
   const [imageUrl , setImageUrl] = useState();
   const [ fetchAgain , setFetchAgain] = useState<number>(0);
   const [ fallbackName , setFallbackName ] = useState<string>();
+  const { doLogout , isLoading } = useLogout(); 
 
 
   useEffect(() => {
@@ -83,7 +85,8 @@ export const Navbar = () => {
   return (
     <>
       <div className="flex justify-between px-6 py-3 border-t border-gray-300">
-        <Button className="bg-white text-red-500 border-1 border-red-400 hover:bg-red-300/10 cursor-pointer">Logout</Button>
+        <Button className="bg-white text-red-500 border-1 border-red-400 hover:bg-red-300/10 cursor-pointer"
+        onClick={doLogout}>{isLoading ? "Logging out..." : "Logout"}</Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">

@@ -31,8 +31,45 @@ export default function Signup() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  // simple validation logic
+  const validateForm = () => {
+    const { email, password , name } = formData;
+    if(!name.trim()){
+      return "Name is required !"
+    }
+
+    if(name.length < 2){
+      return "Name should be greater than 2 words"
+    }
+    // check email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      return "Email is required";
+    }
+    if (!emailRegex.test(email)) {
+      return "Enter a valid email address";
+    }
+
+    // check password
+    if (!password.trim()) {
+      return "Password is required";
+    }
+    if (password.length < 2) {
+      return "Password must be at least 6 characters long";
+    }
+
+    return ""; // no error
+  };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const validationError = validateForm(); 
+
+    if(validationError){
+      toast.error(validationError);
+      return ;
+    }
     setIsLoading(true)
     setError("")
 
@@ -70,7 +107,8 @@ export default function Signup() {
             <h2 className="text-left text-2xl font-semibold">Create Account</h2>
             <p className="text-gray-600 text-xs font-normal">Join our 100% free creative work</p>
 
-            <Button className="flex items-center px-12 mt-6 w-full bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <Button className="flex items-center px-12 mt-6 w-full bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={() => toast.success("The developers are working on this feature !!")}>
               <Image src="/google.png" alt="Google logo" width={18} height={18} className="mr-2" />
               <span className="text-sm font-medium">Sign in with Google</span>
             </Button>
