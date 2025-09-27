@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 
@@ -43,7 +43,7 @@ export const useUsers = () => {
 };
 
 export const useCreateChat = () => {
-    const [isLoading, setIsLoading] = useState<Boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const createChat = async (data: UserData) => {
         setIsLoading(true);

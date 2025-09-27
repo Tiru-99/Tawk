@@ -5,8 +5,8 @@ import { toast } from "sonner";
 
 export const useAuth = () => {
     const router = useRouter();
-    const [isAuthenticated, setIsAuthenticated] = useState<Boolean>(false);
-    const [isLoading, setIsLoading] = useState<Boolean>(false);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     useEffect(() => {
         const checkAuth = async () => {

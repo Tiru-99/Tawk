@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useEffect, useState, useRef } from "react"
+import {  useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import { Video } from "lucide-react"
 import { Input } from "./ui/input"
@@ -100,7 +100,7 @@ export const ChatBox = () => {
         try {
             if (file) {
                 // Handle file upload first
-                handleFileSubmit(file, author, authorId, email, name);
+                handleFileSubmit(file, author, authorId);
                 return; // handleFileSubmit will handle the message sending
             }
 
@@ -125,7 +125,7 @@ export const ChatBox = () => {
         }
     }
 
-    const handleFileSubmit = async (file: File, author: any, authorId: string, name: string, email: string) => {
+    const handleFileSubmit = async (file: File, author: any, authorId: string) => {
         //send request to aws and then trigger socket 
         let imageUrl = ""
         try {

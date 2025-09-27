@@ -32,11 +32,6 @@ interface Peer {
   name: string;
 }
 
-interface UserDetails {
-  userId: string,
-  name: string
-}
-
 type ConsumerEntry = {
   consumer: mediasoupTypes.Consumer;
   userId: string;
@@ -68,9 +63,7 @@ export default function Page() {
 
   //states 
   const [userId, setUserId] = useState<string>();
-  const [toastMessage, setToastMessage] = useState<string>();
   const [username, setUserName] = useState<string>();
-  const [rtpCapabilities, setRtpCapabilities] = useState<mediasoupTypes.RtpCapabilities>();
   const [producers, setProducers] = useState<ProducerContainer[]>([]);
   const [isMicOn, setIsMicOn] = useState<boolean>(true);
   const [isVideoOn, setIsVideoOn] = useState<boolean>(true);
@@ -95,6 +88,7 @@ export default function Page() {
     console.log("Auth state changed:", { isAuthenticated, isLoading });
 
     if (!isLoading) {
+      //@ts-ignore
       if (isAuthenticated && isAuthenticated === false) {
         toast.error("You are not logged in");
         router.push("/login");
@@ -251,9 +245,6 @@ export default function Page() {
     );
   };
 
-  const closeProducer = (producer_id: string) => {
-    sendRequest(WebSocketEventType.CLOSE_PRODUCER, { producer_id });
-  };
 
   const newProducers = (args: ProducerContainer[] | ProducerContainer) => {
     console.log("Received new producers:", args);

@@ -1,15 +1,13 @@
-import { useLogout } from "@/hooks/useAuth";
+
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatBox } from "./ChatBox";
 import { useChat } from "@/context/chatContext";
 
 export default function HomePage() {
-    const { isLoading, doLogout } = useLogout();
     const { selectedChat, setSelectedChat } = useChat();
     return (
         <>
-         
-
+        
             {/* Desktop Container */}
 
             <div className="hidden lg:block">
