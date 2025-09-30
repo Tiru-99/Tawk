@@ -19,6 +19,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "ioredis": "^5.8.0",
     "jsonwebtoken": "^9.0.2",
     "kafkajs": "^2.2.4",
     "mediasoup": "^3.19.2",

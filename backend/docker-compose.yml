@@ -13,6 +13,7 @@ services:
       - "9092:9092" 
       - "9093:9093" 
     environment:
+      KAFKA_CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk  
       KAFKA_KRAFT_MODE: "true"
       KAFKA_PROCESS_ROLES: "controller,broker"
       KAFKA_NODE_ID: 1

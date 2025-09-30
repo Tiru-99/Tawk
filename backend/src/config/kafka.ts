@@ -1,15 +1,31 @@
 import { Kafka, Producer } from "kafkajs";
 import dotenv from 'dotenv';
 import prisma from "../utils/prisma";
+import fs from 'fs'; 
 
 dotenv.config({
     path: './.env'
 })
 
+// for local development use this
+// const kafka = new Kafka({
+//     clientId: 'chat-kafka',
+//     brokers: [process.env.KAFKA_BROKER!], // no SSL
+// });
+
+//for prod 
 const kafka = new Kafka({
-    clientId: 'chat-kafka',
-    brokers: [process.env.KAFKA_BROKER!], // no SSL
+  clientId: "chat-kafka",
+  brokers: [process.env.KAFKA_BROKER!],  // e.g. "kafka-xyz.aivencloud.com:12345"
+  ssl: {
+    rejectUnauthorized: true,
+    ca: [fs.readFileSync("./certs/ca.pem", "utf-8")],
+    key: fs.readFileSync("./certs/service.key", "utf-8"),
+    cert: fs.readFileSync("./certs/service.cert", "utf-8"),
+  }
 });
+
+
 
 
 let producer: null | Producer;
