@@ -37,7 +37,6 @@ app.use(express.urlencoded({extended: true, limit: "16kb"}))
 app.use(express.static("public"))
 //to compress api requests
 app.use(compression());
-app.use(cookieParser())
 app.use(
     cors({
       origin: process.env.FRONTEND_URL, // Allow only this origin
@@ -46,6 +45,8 @@ app.use(
       credentials: true, // Allow cookies if needed
     })
   );
+
+app.use(cookieParser())
 
 const PORT = 5000 ; 
 
