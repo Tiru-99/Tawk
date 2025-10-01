@@ -97,6 +97,7 @@ export const checkAuth = async (req: Request, res: Response) => {
   const token = req.cookies.jwtToken;
 
   if (!token) {
+    console.log("No incoming token found");
     return res.status(200).json({
       message: "Unauthorized User",
       authenticated: false
