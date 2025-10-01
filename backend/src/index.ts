@@ -15,8 +15,7 @@ dotenv.config({
   path: './.env'
 })
 
-
-
+console.log("the frontend url is " , process.env.FRONTEND_URL);
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
