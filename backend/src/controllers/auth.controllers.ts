@@ -78,7 +78,6 @@ export const loginHandler = async (req: Request, res: Response) => {
       .cookie("jwtToken", jwtToken, options)
       .json({
         message: "User has been successfully Logged In",
-        token: jwtToken,
         userId: userExists.id,
         name: userExists.name,
         imageUrl: userExists.imageUrl,
