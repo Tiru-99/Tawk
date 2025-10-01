@@ -1,6 +1,7 @@
 import { Kafka, Producer } from "kafkajs";
 import dotenv from 'dotenv';
 import prisma from "../utils/prisma";
+import { Prisma } from "@prisma/client";
 import fs from 'fs'; 
 
 dotenv.config({
@@ -69,7 +70,7 @@ export const startMessageConsumer = async () => {
 
             try {
                 // kafka logic here will be doing it afterwards 
-                const message = await prisma.$transaction(async (tx) => {
+                const message = await prisma.$transaction(async (tx : Prisma.TransactionClient ) => {
                     // 1. Create the message
                     const msg = await tx.messages.create({
                         data: {
