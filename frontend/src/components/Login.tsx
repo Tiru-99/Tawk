@@ -75,8 +75,7 @@ export default function Login() {
             const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/user/login`, formData, {
                 headers: {
                     "Content-Type": "application/json",
-                },
-                withCredentials: true
+                }
             })
 
             setIsLoading(false);
