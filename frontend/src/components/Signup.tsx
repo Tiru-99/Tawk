@@ -32,7 +32,8 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { isLoading: loading, isAuthenticated } = useAuth();
+  //skip redirect
+  const { isLoading: loading, isAuthenticated } = useAuth(true);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {

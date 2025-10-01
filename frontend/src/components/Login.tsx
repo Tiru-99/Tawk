@@ -27,7 +27,8 @@ export default function Login() {
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const { isLoading: loading, isAuthenticated } = useAuth();
+    //skip redirect set to true 
+    const { isLoading: loading, isAuthenticated } = useAuth(true);
 
     useEffect(() => {
         if (!loading && isAuthenticated) {
