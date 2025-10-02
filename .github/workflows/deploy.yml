@@ -1,10 +1,38 @@
 
-name : "Deploy CI/CD"
+name: Backend CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - master
+    paths:
+      - 'backend/**'  
 
-jobs : 
-  build:
-    
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20 
+
+      # Deploy 
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}        
+          username: ${{ secrets.EC2_USER }}    
+          key: ${{ secrets.EC2_KEY }}          
+          script: |
+            cd /home/ubuntu/backend            
+            git fetch --all
+            git reset --hard origin/master
+            npm ci
+            pm2 reload chat-backend            

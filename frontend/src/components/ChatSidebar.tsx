@@ -95,7 +95,7 @@ const ChatCard = ({ chat }: any) => {
                     <div className="relative w-12 h-12">
                         {otherImageUrl ? (
                             <Image
-                                src={otherImageUrl}
+                                src={otherImageUrl }
                                 alt="profile"
                                 fill
                                 className="rounded-full object-cover shadow-sm"
