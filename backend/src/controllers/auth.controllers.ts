@@ -140,7 +140,8 @@ export const logout = (req: Request, res: Response) => {
       res.clearCookie("jwtToken", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production", // only send cookie over https in production
-        sameSite: "strict",
+        sameSite: 'none' as const,
+        path : '/'
       });
 
       return res.status(200).json({
