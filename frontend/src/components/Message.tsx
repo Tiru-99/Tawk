@@ -2,7 +2,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { Dot } from "lucide-react"
 import { Video, Phone } from "lucide-react";
-import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -96,7 +95,6 @@ const MediaMessage = ({ isOwn, message }: MediaMessageProps) => {
 
 
 const VideoCallMessage = ({ isOwn, url }: { isOwn: boolean, url: string }) => {
-  const router = useRouter();
   return (
     <>
       {/* Dialog Trigger */}
@@ -124,7 +122,7 @@ const VideoCallMessage = ({ isOwn, url }: { isOwn: boolean, url: string }) => {
           </DialogHeader>
           <DialogFooter className="flex justify-around mt-4">
             <Button variant="default" className="flex items-center gap-2 bg-green-500 hover:bg-green-600"
-              onClick={() => router.push(`/call/${url}`)}>
+              onClick={() => window.open(`/call/${url}`, "_blank")}>
               <Phone className="w-4 h-4" />
               Join
             </Button>

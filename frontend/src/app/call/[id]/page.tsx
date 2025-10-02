@@ -766,7 +766,7 @@ export default function Page() {
 
           {/* End Call */}
           <button
-            // onClick={handleEndCall}
+            onClick={() => window.close()}
             className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-all duration-300 hover:-translate-y-1 ease-in-out"
             title="End Call"
           >
