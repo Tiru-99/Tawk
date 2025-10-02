@@ -47,6 +47,7 @@ app.use(express.static("public"))
 //to compress api requests
 app.use(compression());
 app.use(cookieParser())
+app.set("trust-proxy" , 1); 
 
 const PORT = 5000;
 
