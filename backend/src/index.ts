@@ -5,7 +5,6 @@ import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors'
-import { types as mediasoupTypes } from 'mediasoup';
 import { startMessageConsumer } from './config/kafka';
 import { connectRedis } from './config/redis';
 import { SocketIoServer } from './socket';

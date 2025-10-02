@@ -1,5 +1,10 @@
 
 import { types as mediasoupTypes } from "mediasoup"
+import dotenv from "dotenv"; 
+
+dotenv.config({
+  path: './.env'
+})
 
 interface ListenIpsProps {
     ip : string , 
@@ -31,7 +36,7 @@ export const config = {
             listenIps: [
                 {
                   ip: '0.0.0.0',
-                  announcedIp: "172.16.150.238",
+                  announcedIp: process.env.ANNOUNCED_IP,
                 }
               ] as ListenIpsProps[],
               maxIncomingBitrate: 1500000,
