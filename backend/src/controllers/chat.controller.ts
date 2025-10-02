@@ -173,6 +173,7 @@ export const getChats = async (req: Request, res: Response) => {
             } ,
             content : true , 
             mediaUrl : true , 
+            callUrl : true , 
             id : true , 
             type : true,
             createdAt : true
