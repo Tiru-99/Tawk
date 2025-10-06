@@ -11,6 +11,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import axios from 'axios';
 import { useAuth } from "@/hooks/useAuth"
+import { AlertCircle } from "lucide-react"
 
 
 interface LoginFormData {
@@ -193,19 +194,22 @@ export default function Login() {
                     </div>
                 </div>
 
-                <div className="
-                    mb-6 p-4 rounded-md 
-                    bg-yellow-100 text-yellow-800 border border-yellow-300 text-sm 
-                    space-y-2 
-                    w-full max-w-md mx-auto 
-                    absolute top-4 left-1/2 transform -translate-x-1/2
-                ">
-                    <p>
-                        ⚠️ If you are using <strong>incognito mode</strong>, please allow third-party app cookies.
-                    </p>
-                    <p>
-                        ❌ If something went wrong, it could be a firewall or network issue. Try again or check your connection.
-                    </p>
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/5 to-transparent pointer-events-none">
+                    <div className="max-w-2xl mx-auto bg-amber-50 border-2 border-amber-200 rounded-xl p-4 shadow-lg pointer-events-auto">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <div className="space-y-2 text-sm">
+                                <p className="text-amber-900">
+                                    <span className="font-semibold">⚠️ Incognito Mode:</span> Please allow third-party app cookies if using
+                                    incognito mode.
+                                </p>
+                                <p className="text-amber-900">
+                                    <span className="font-semibold">❌ Connection Issues:</span> If something went wrong, check your
+                                    firewall or network connection.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

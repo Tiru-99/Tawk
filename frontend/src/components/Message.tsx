@@ -24,7 +24,6 @@ export const Message = ({ message }: any) => {
     hour12: true,
   });
 
-  console.log("imageurl of author is " , message.author.imageUrl);
 
   return (
     <>

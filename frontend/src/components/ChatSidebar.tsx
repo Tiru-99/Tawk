@@ -54,8 +54,8 @@ export const ChatSidebar = () => {
 const ChatCard = ({ chat }: any) => {
     const { selectChat } = useChat();
     const { isGroupChat, latestMessage, latestMessageCreatedAt , unseenCount, name, otherImageUrl } = chat;
-     const { resetUnseen } = useResetUnseen(); 
-
+    const { resetUnseen } = useResetUnseen(); 
+    
     const formatDate = (latestMessageCreatedAt: string) => {
         const date = new Date(latestMessageCreatedAt);
 
@@ -64,6 +64,7 @@ const ChatCard = ({ chat }: any) => {
             month: "short",
         });
     };
+
 
     const handleChatSelect = () => {
         selectChat(chat);
