@@ -94,7 +94,7 @@ const ChatCard = ({ chat }: any) => {
             >
                 <div className="flex gap-3 items-center">
                     <div className="relative w-12 h-12">
-                        {otherImageUrl ? (
+                        {otherImageUrl && otherImageUrl.length > 0 ? (
                             <Image
                                 src={otherImageUrl }
                                 alt="profile"

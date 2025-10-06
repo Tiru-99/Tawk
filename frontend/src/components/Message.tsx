@@ -17,7 +17,7 @@ export const Message = ({ message }: any) => {
   // Safe localStorage access (only in browser)
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
   const isOwn = userId === message?.authorId;
-
+  
   const formatted = new Date(message?.createdAt).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -33,7 +33,7 @@ export const Message = ({ message }: any) => {
             <div className="">
               <Avatar>
                 <AvatarImage className="h-10 w-10" src={message?.author?.imageUrl}></AvatarImage>
-                <AvatarFallback></AvatarFallback>
+                <AvatarFallback className="bg-gray-100 text-sm">{message?.author.name.slice(0,2).toUpperCase()}</AvatarFallback>
               </Avatar>
             </div>
           )}
